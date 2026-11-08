@@ -1,0 +1,66 @@
+# ============================================================
+# robots.txt — dongphucunivi.com
+# Lưu ý: bot khớp một nhóm User-agent riêng sẽ KHÔNG đọc quy tắc của nhóm *,
+# nên mỗi nhóm riêng phải tự khai báo lại các Disallow cần thiết.
+# ============================================================
+
+# Googlebot
+User-agent: Googlebot
+Allow: /
+Allow: /_next/static/
+Allow: /_next/image
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /search?
+
+# Google-Extended controls Gemini training and grounding (AI Overviews use Googlebot)
+User-agent: Google-Extended
+Disallow: /api/
+
+# ChatGPT / OpenAI
+User-agent: GPTBot
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Disallow: /api/
+
+# Perplexity AI
+User-agent: PerplexityBot
+Disallow: /api/
+
+# Anthropic Claude
+User-agent: ClaudeBot
+Disallow: /api/
+
+User-agent: anthropic-ai
+Disallow: /api/
+
+# Meta AI
+User-agent: FacebookBot
+Disallow: /api/
+
+# Apple
+User-agent: Applebot
+Disallow: /api/
+
+User-agent: Applebot-Extended
+Disallow: /api/
+
+# Microsoft Bing + Copilot
+User-agent: Bingbot
+Disallow: /api/
+
+User-agent: msnbot
+Disallow: /api/
+
+# Default
+User-agent: *
+Allow: /
+Allow: /_next/static/
+Allow: /_next/image
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /search?
+
+# Sitemap
+Sitemap: https://dongphucunivi.com/sitemap.xml
