@@ -9,6 +9,7 @@ import { getCategoryPath, getCategoryDisplayName } from "../../../lib/siteCatego
 import ProductDetailSkeleton from "../../../components/ui/product-detail-skeleton";
 import { setPublicCacheHeaders } from "../../../lib/cacheControl";
 import { PRODUCT_SLUG_FIXES, dbSlugCandidates, publicSlug } from "../../../lib/slugFixes";
+import { hasProductDetailContent, truncateMetaDescription, toSkuToken } from "../../../lib/productContent";
 
 // ─── CATEGORY NAMES MAP ──────────────────────────────────────────────────────
 const CATEGORY_NAMES = {
@@ -190,16 +191,26 @@ export async function getServerSideProps({ params, res } = {}) {
       ? product.sizes.map((s) => (typeof s === 'string' ? s.trim() : '')).filter(Boolean)
       : [];
 
-    const colorNames = Array.isArray(product.colors)
-      ? product.colors.map((c) => c.name?.trim()).filter(Boolean)
+    // Một màu có thể có nhiều ảnh (nhiều phần tử colors cùng tên) — dữ liệu CMS cố ý như vậy.
+    // Schema chỉ liệt kê mỗi màu MỘT lần và mỗi màu MỘT variant. So khớp theo toSkuToken
+    // (bỏ dấu, không phân biệt hoa thường) để gộp cả lỗi gõ như "Trắng"/"TRắng" và SKU không trùng.
+    const uniqueColorObjs = Array.isArray(product.colors)
+      ? product.colors.filter((c, i, arr) => {
+          const key = toSkuToken(c?.name);
+          if (!key) return true;
+          return arr.findIndex((x) => toSkuToken(x?.name) === key) === i;
+        })
       : [];
+    const colorNames = uniqueColorObjs.map((c) => c?.name?.trim()).filter(Boolean);
+    const baseSku = product.maSanPham || `SP${product._id}`; // maSanPham đã là ASCII (validate trong model)
 
     const materialValue = typeof product.material === 'string' ? product.material.trim() : '';
 
-    const productVariants = Array.isArray(product.colors) && product.colors.length > 0
-      ? product.colors.map((colorObj, idx) => {
+    const productVariants = uniqueColorObjs.length > 0
+      ? uniqueColorObjs.map((colorObj, idx) => {
           const colorImg = normalizeImgUrl(colorObj.image) || productImage;
-          const variantSku = `${product.maSanPham || `SP${product._id}`}-${colorObj.name ? colorObj.name.replace(/\s+/g, '-').toUpperCase() : `V${idx + 1}`}`;
+          // SKU ASCII không dấu: "Xám than" → "AG1-XAM-THAN" (trước đây ra "AG1-XÁM-THAN")
+          const variantSku = `${baseSku}-${toSkuToken(colorObj.name) || `V${idx + 1}`}`;
           return {
             '@type': 'Product',
             '@id': `${canonicalUrl}#variant-${idx + 1}`,
@@ -227,16 +238,21 @@ export async function getServerSideProps({ params, res } = {}) {
         })
       : [];
 
+    // Trang chưa có nội dung chi tiết → noindex (vẫn follow) và bị loại khỏi sitemap-products.
+    // Khi admin nhập content, trang tự index lại. Xem lib/productContent.js.
+    const isIndexable = hasProductDetailContent(product.content);
+    const metaDescription = truncateMetaDescription(product.description || `Đồng phục ${categoryNameVN} từ Univi.`);
+
     const meta = {
       title: `${product.name} - Đồng Phục Univi`,
-      description: product.description || `Đồng phục ${categoryNameVN} từ Univi.`,
+      description: metaDescription,
       author: 'Đồng Phục Univi',
       canonical: canonicalUrl,
-      robots: 'index, follow',
+      robots: isIndexable ? 'index, follow' : 'noindex, follow',
       keywords: `${product.name},đồng phục Univi, ${categoryNameVN}`,
       og: {
         title: `${product.name} — Đồng Phục Univi`,
-        description: product.description || "",
+        description: metaDescription,
         type: 'product',
         image: productImage,
         imageWidth: '1200',
@@ -248,7 +264,7 @@ export async function getServerSideProps({ params, res } = {}) {
       twitter: {
         card: 'summary_large_image',
         title: `${product.name} — Đồng Phục Univi`,
-        description: product.description || "",
+        description: metaDescription,
         image: productImage,
       },
       schema: [

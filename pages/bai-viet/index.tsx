@@ -240,6 +240,10 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
               </ol>
             </nav>
 
+            <h1 className="text-2xl md:text-3xl font-bold text-[#0B1E48]">
+              Bài viết & Chia sẻ về Đồng phục
+            </h1>
+
             {featuredPosts.length > 0 && selectedCategory === "all" && (
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4 md:mb-5">

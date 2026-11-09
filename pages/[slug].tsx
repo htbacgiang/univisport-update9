@@ -7,6 +7,7 @@ import Author from "../models/Author";
 import Feedback from "../models/Feedback";
 import DirectPostView from "../components/layout/DirectPostView";
 import { setPublicCacheHeaders } from "../lib/cacheControl";
+import { COMPANY_INFO } from "../lib/companyInfo";
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 type MetaData = {
@@ -99,6 +100,25 @@ export const getServerSideProps: GetServerSideProps<Props, { slug: string }> = a
       const postAuthor = post.postAuthor || { name: "Trần Hiền" };
       const thumbnailUrl = post.thumbnail?.url || "https://dongphucunivi.com/images/banner-home-1.jpg";
 
+      // Ngày đăng/cập nhật thật từ DB. Thiếu Article schema khiến Google tự đoán ngày
+      // từ nội dung (vd. "năm 2016" trong bài sáng lập → hiển thị 15/05/2016).
+      const publishedISO = post.createdAt ? new Date(post.createdAt).toISOString() : undefined;
+      const modifiedISO =
+        post.updatedAt && publishedISO && new Date(post.updatedAt) > new Date(post.createdAt)
+          ? new Date(post.updatedAt).toISOString()
+          : publishedISO;
+      const isFounderAuthor = !post.postAuthor || post.postAuthor.slug === COMPANY_INFO.founder.slug;
+      const authorSchema = isFounderAuthor
+        ? { "@type": "Person", "@id": COMPANY_INFO.founder.id, "name": COMPANY_INFO.founder.name, "url": COMPANY_INFO.founder.url }
+        : {
+            "@type": "Person",
+            "name": postAuthor.name,
+            ...(postAuthor.slug ? {
+              "@id": `https://dongphucunivi.com/tac-gia/${postAuthor.slug}#person`,
+              "url": `https://dongphucunivi.com/tac-gia/${postAuthor.slug}`,
+            } : {}),
+          };
+
       const meta: MetaData = {
         title: post.title,
         description: post.meta,
@@ -130,7 +150,25 @@ export const getServerSideProps: GetServerSideProps<Props, { slug: string }> = a
               { "@type": "ListItem", "position": 1, "name": "Trang chủ", "item": "https://dongphucunivi.com" },
               { "@type": "ListItem", "position": 2, "name": post.title, "item": canonicalUrl },
             ],
-          }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "@id": `${canonicalUrl}#article`,
+            "headline": post.title,
+            ...(post.meta && { "description": post.meta }),
+            "image": thumbnailUrl,
+            ...(publishedISO && { "datePublished": publishedISO, "dateModified": modifiedISO }),
+            "url": canonicalUrl,
+            "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl },
+            "isPartOf": { "@id": "https://dongphucunivi.com/#website" },
+            "publisher": { "@id": "https://dongphucunivi.com/#organization" },
+            "author": authorSchema,
+            // Bài sáng lập là trang viết VỀ founder → about trỏ tới Person canonical
+            ...(slug === "dong-sang-lap-univi-sport-tran-hien" && {
+              "about": { "@id": COMPANY_INFO.founder.id },
+            }),
+          },
         ],
       };
 

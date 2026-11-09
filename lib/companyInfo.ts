@@ -60,10 +60,11 @@ export const COMPANY_INFO = {
 
   workingHours: {
     weekdays: "Thứ 2 - Thứ 7: 8:00 - 18:00",
-    weekend: "Chủ nhật: 8:00 - 18:00",
-    allWeek: "08:00 - 18:00 (T2 - CN)",
+    // Chốt 09/11/2026: làm việc Thứ 2 – Thứ 7, Chủ nhật nghỉ (khớp openingHoursSpecification trong _app.js)
+    weekend: "Chủ nhật: Nghỉ",
+    allWeek: "08:00 - 18:00 (T2 - T7)",
     text: "08:00 - 18:00",
-    days: "T2 - CN",
+    days: "T2 - T7",
   },
 
   founder: {
@@ -75,6 +76,21 @@ export const COMPANY_INFO = {
     id: "https://dongphucunivi.com/tac-gia/tran-hien#person",
     slug: "tran-hien",
     founderPageUrl: "https://dongphucunivi.com/dong-sang-lap-univi-sport-tran-hien",
+    // Nguồn: bài /dong-sang-lap-univi-sport-tran-hien ("Tốt nghiệp Đại học Dược Hà Nội năm 2016")
+    // và docs/knowledge/26-founder-tran-hien.md. Chỉ thêm dữ kiện đã có nguồn.
+    alumniOf: "Trường Đại học Dược Hà Nội",
+    // Hồ sơ mạng xã hội cá nhân được liệt kê trong bài sáng lập
+    sameAs: [
+      "https://www.facebook.com/hienunivi",
+      "https://www.instagram.com/dstranhien",
+    ],
+    knowsAbout: [
+      "Chất liệu vải thể thao",
+      "Vải thoát ẩm UNI DRY",
+      "Đồng phục Gym, Yoga, Pilates, Pickleball",
+      "Đồng phục doanh nghiệp",
+      "Sản xuất may mặc B2B",
+    ],
   },
 
   social: {

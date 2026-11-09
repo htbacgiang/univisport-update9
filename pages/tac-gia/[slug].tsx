@@ -50,6 +50,7 @@ const normalizeImageUrl = (
 
 const AuthorPage: NextPage<Props> = ({ author, posts = [] }) => {
   if (!author) return null;
+  const isFounder = author.slug === COMPANY_INFO.founder.slug;
 
   return (
     <DefaultLayout>
@@ -81,7 +82,15 @@ const AuthorPage: NextPage<Props> = ({ author, posts = [] }) => {
           <div className="flex-1 text-center sm:text-left">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{author.name}</h1>
             {author.role && <p className="text-[#105d97] font-medium mt-1">{author.role}</p>}
-            {author.bio && <p className="text-gray-600 mt-2 leading-6">{author.bio}</p>}
+            {author.bio && <p className="text-gray-600 mt-2 leading-6 whitespace-pre-line">{author.bio}</p>}
+            {isFounder && (
+              <Link
+                href={COMPANY_INFO.founder.founderPageUrl.replace("https://dongphucunivi.com", "")}
+                className="inline-block mt-3 text-sm font-semibold text-[#105d97] hover:underline"
+              >
+                Xem hồ sơ & hành trình sáng lập →
+              </Link>
+            )}
             {author.socialLinks && (
               <div className="flex items-center gap-4 mt-4 justify-center sm:justify-start">
                 {author.socialLinks.facebook && (
@@ -205,17 +214,18 @@ export const getServerSideProps: GetServerSideProps<Props, { slug: string }> = a
       author.name === COMPANY_INFO.founder.name ||
       author.slug === COMPANY_INFO.founder.slug ||
       author.slug === "dong-sang-lap-univi-sport-tran-hien";
-    const metaTitle = `${author.name} — ${author.role || "Tác giả"} | Đồng Phục Univi`;
+    const metaTitle = `${author.name} - ${author.role || "Tác giả"} | Đồng Phục Univi`;
     const metaDesc = author.bio
       ? `${author.bio.replace(/\n/g, " ")} — Đọc các bài viết chuyên sâu về đồng phục thể thao tại Đồng Phục Univi.`
       : `Đọc các bài viết của ${author.name}, ${author.role || "tác giả"} tại Đồng Phục Univi — xưởng sản xuất đồng phục thể thao chuyên dụng tại Hà Nội.`;
 
     // ── sameAs: lọc các link social có giá trị thật ──────────
-    const sameAs = [
+    const sameAs = Array.from(new Set([
       author.socialLinks?.facebook,
       author.socialLinks?.linkedin,
       author.socialLinks?.zalo,
-    ].filter((url): url is string => !!url && url.startsWith("http"));
+      ...(isFounder ? COMPANY_INFO.founder.sameAs : []),
+    ].filter((url): url is string => !!url && url.startsWith("http"))));
 
     const meta = {
       title: metaTitle,
@@ -274,6 +284,12 @@ export const getServerSideProps: GetServerSideProps<Props, { slug: string }> = a
             // liên kết Person với Organization Univi — E-E-A-T signal
             "worksFor": { "@id": "https://dongphucunivi.com/#organization" },
             ...(sameAs.length > 0 && { "sameAs": sameAs }),
+            ...(isFounder && {
+              "alumniOf": { "@type": "CollegeOrUniversity", "name": COMPANY_INFO.founder.alumniOf },
+              "knowsAbout": COMPANY_INFO.founder.knowsAbout,
+              // Bài câu chuyện sáng lập là trang VIẾT VỀ người này → subjectOf (không phải sameAs/mainEntityOfPage)
+              "subjectOf": { "@type": "Article", "url": COMPANY_INFO.founder.founderPageUrl },
+            }),
           },
           // bài viết gần nhất của tác giả (Person không có thuộc tính "author" hợp lệ)
           ...(posts.length > 0 && {

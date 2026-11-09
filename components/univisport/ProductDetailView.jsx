@@ -31,6 +31,7 @@ import { normalizeInternalLinkAttributes } from '../../utils/internalLinks';
 import { getProductLineLabel } from '../../lib/productTaxonomy';
 import { ENTERPRISE_FLAT_SLUGS } from '../../lib/enterpriseFlatSlugs';
 import { getCategoryPath, getCategoryDisplayName } from '../../lib/siteCategories';
+import { hasProductDetailContent } from '../../lib/productContent';
 
 const ENTERPRISE_CATEGORY_SLUG = 'dong-phuc-doanh-nghiep';
 
@@ -723,6 +724,9 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
   const { headings, content: processedContent } = useMemo(() => {
     return parseToc(product.content || '');
   }, [product.content]);
+  // Ẩn hẳn khối "Chi tiết sản phẩm" khi content rỗng (kể cả HTML trống như <p><br></p>),
+  // thay vì render câu placeholder lặp lại trên mọi trang thiếu nội dung.
+  const hasDetailContent = useMemo(() => hasProductDetailContent(processedContent), [processedContent]);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const mainSwiperRef = useRef(null);
   const thumbsSwiperRef = useRef(null);
@@ -1276,6 +1280,7 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
         )}
 
         {/* Product Details */}
+        {hasDetailContent && (
         <div ref={productDetailsRef} className="mt-6 mx-auto scroll-mt-24">
           <div className="bg-white md:p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -1304,7 +1309,7 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
                   .blog :global(td p), .blog :global(th p) { text-align: left !important; margin: 0; }
                   .blog :global(h1), .blog :global(h2), .blog :global(h3), .blog :global(h4), .blog :global(h5), .blog :global(h6) { scroll-margin-top: 100px; }
                 `}</style>
-                {parse(processedContent || '<p class="text-gray-600">Không có thông tin chi tiết sản phẩm.</p>', parseOptions)}
+                {parse(processedContent, parseOptions)}
               </div>
               {!isContentExpanded && (
                 <>
@@ -1326,6 +1331,7 @@ export default function ProductDetailView({ product, relatedProducts = [] }) {
             </div>
           </div>
         </div>
+        )}
 
         {product.faqs && product.faqs.length > 0 && (
           <section className="mt-6 mx-auto bg-white md:p-6" aria-labelledby="product-faq-title">

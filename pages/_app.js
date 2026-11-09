@@ -32,13 +32,16 @@ if (typeof Promise !== "undefined" && !Promise.withResolvers) {
   };
 }
 
+// Nguồn DUY NHẤT của font Gilroy (trước đây khai báo trùng trong globals.css + preload
+// trong _document → tải 2 lần). next/font tự preload, tự tạo fallback có size-adjust
+// (giảm CLS khi swap). WOFF2 nhẹ hơn ~57% so với OTF gốc.
 const siteFont = localFont({
   variable: "--font-site",
-  display: "block",
+  display: "swap",
   src: [
-    { path: "../public/fonts/SVN-Gilroy-Thin.otf", weight: "100", style: "normal" },
-    { path: "../public/fonts/SVN-Gilroy-Regular.otf", weight: "400", style: "normal" },
-    { path: "../public/fonts/SVN-Gilroy-Medium.otf", weight: "500", style: "normal" },
+    { path: "../public/fonts/SVN-Gilroy-Thin.woff2", weight: "100", style: "normal" },
+    { path: "../public/fonts/SVN-Gilroy-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/SVN-Gilroy-Medium.woff2", weight: "500", style: "normal" },
   ],
 });
 
@@ -51,63 +54,112 @@ function getImageMimeType(url = "") {
 }
 
 
+// ── Organization + LocalBusiness ─────────────────────────────────────────────
+// Dựng từ lib/companyInfo.ts (single source of truth). Chỉ dùng dữ kiện đã có
+// trạng thái [FACT] trong docs/knowledge/01-thuong-hieu.md. Các trường còn ở
+// docs/knowledge/27-can-xac-minh.md (email #15, TikTok #14, chức danh founder)
+// cố ý KHÔNG đưa vào cho tới khi được chốt.
+const SITE = "https://dongphucunivi.com";
+const toE164 = (tel) => "+84" + tel.replace(/\D/g, "").replace(/^0/, "");
+const { office, factory, founder } = COMPANY_INFO;
+
+const officeAddress = {
+  "@type": "PostalAddress",
+  "streetAddress": office.streetAddress,
+  "addressLocality": office.addressLocality,
+  "addressRegion": office.addressRegion,
+  "postalCode": office.postalCode,
+  "addressCountry": office.addressCountry,
+};
+const officeGeo = {
+  "@type": "GeoCoordinates",
+  "latitude": office.geo.latitude,
+  "longitude": office.geo.longitude,
+};
+
 const organizationSchema = {
   "@context": "https://schema.org",
-  "@type": "Organization",
-  "@id": "https://dongphucunivi.com/#organization",
-  "name": "Đồng Phục Univi",
-  "legalName": "Công ty Cổ phần Tập đoàn Unicore Holdings",
-  "url": "https://dongphucunivi.com/",
+  // Không dùng ClothingStore: Univi là xưởng sản xuất B2B, không phải cửa hàng bán lẻ.
+  "@type": ["Organization", "LocalBusiness"],
+  "@id": `${SITE}/#organization`,
+  "name": COMPANY_INFO.name,
+  "legalName": COMPANY_INFO.legalName,
+  "alternateName": ["Univi", "Univi Sport", COMPANY_INFO.brandName],
+  "description": `Xưởng thiết kế và sản xuất đồng phục thể thao (Gym, Yoga, Pilates, Pickleball, chạy bộ), đồng phục huấn luyện viên và đồng phục doanh nghiệp. Xưởng ${factory.area} tại ${factory.addressLocality}, ${factory.addressRegion}, công suất ${factory.capacity}.`,
+  "url": `${SITE}/`,
   "logo": {
     "@type": "ImageObject",
-    "url": "https://dongphucunivi.com/images/logo-univi-2.png",
+    "@id": `${SITE}/#logo`,
+    "url": `${SITE}/images/logo-univi-2.png`,
+    "contentUrl": `${SITE}/images/logo-univi-2.png`,
     "width": 512,
     "height": 512,
+    "caption": COMPANY_INFO.name,
   },
-  "telephone": "+84834204999",
-  "taxID": "0111401705",
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "Nhà D14, ngõ 180 Thanh Bình",
-    "addressLocality": "phường Hà Đông",
-    "addressRegion": "Hà Nội",
-    "postalCode": "100000",
-    "addressCountry": "VN",
-  },
+  "image": [`${SITE}/images/logo-univi-2.png`, `${SITE}/images/banner-home-1.jpg`],
+  "telephone": toE164(COMPANY_INFO.hotline),
+  "taxID": COMPANY_INFO.taxCode,
+  "foundingDate": COMPANY_INFO.foundingYear,
+  // Person đầy đủ (jobTitle, alumniOf, sameAs...) nằm ở /tac-gia/tran-hien → chỉ tham chiếu @id
+  "founder": { "@id": founder.id, "name": founder.name },
+  "address": officeAddress,
+  "geo": officeGeo,
+  "hasMap": `https://www.google.com/maps?q=${office.geo.latitude},${office.geo.longitude}`,
+  // 08:00 – 18:00, Thứ 2 – Thứ 7 (chốt 09/11/2026; Chủ nhật nghỉ)
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      "opens": "08:00",
+      "closes": "18:00",
+    },
+  ],
   "location": [
     {
       "@type": "Place",
-      "@id": "https://dongphucunivi.com/#office",
-      "name": "Văn phòng Đồng Phục UNIVI - Hà Đông, Hà Nội",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "Nhà D14, ngõ 180 Thanh Bình",
-        "addressLocality": "phường Hà Đông",
-        "addressRegion": "Hà Nội",
-        "postalCode": "100000",
-        "addressCountry": "VN",
-      },
+      "@id": `${SITE}/#office`,
+      "name": `Văn phòng ${COMPANY_INFO.name} - Hà Đông, Hà Nội`,
+      "address": officeAddress,
+      "geo": officeGeo,
     },
     {
       "@type": "Place",
-      "@id": "https://dongphucunivi.com/#factory",
-      "name": "Xưởng Sản Xuất Đồng Phục UNIVI - Chương Mỹ, Hà Nội",
-      "description": "Xưởng sản xuất đồng phục diện tích 2.000 m² tại Chương Mỹ, Hà Nội.",
+      "@id": `${SITE}/#factory`,
+      "name": `Xưởng sản xuất ${COMPANY_INFO.name} - ${factory.addressLocality}, ${factory.addressRegion}`,
+      "description": `Xưởng sản xuất đồng phục khép kín diện tích ${factory.area}, công suất ${factory.capacity} tại ${factory.addressLocality}, ${factory.addressRegion}.`,
       "address": {
         "@type": "PostalAddress",
-        "addressLocality": "Chương Mỹ",
-        "addressRegion": "Hà Nội",
-        "addressCountry": "VN",
+        "addressLocality": factory.addressLocality,
+        "addressRegion": factory.addressRegion,
+        "addressCountry": factory.addressCountry,
       },
     },
   ],
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "contactType": "sales",
-    "telephone": "+84834204999",
-    "areaServed": "VN",
-    "availableLanguage": ["Vietnamese"],
-  },
+  "areaServed": { "@type": "Country", "name": "Việt Nam" },
+  "contactPoint": [
+    {
+      "@type": "ContactPoint",
+      "contactType": "sales",
+      "telephone": toE164(COMPANY_INFO.hotline),
+      "areaServed": "VN",
+      "availableLanguage": ["Vietnamese"],
+    },
+    {
+      "@type": "ContactPoint",
+      "contactType": "sales",
+      "telephone": toE164(COMPANY_INFO.salesPhone),
+      "areaServed": "VN",
+      "availableLanguage": ["Vietnamese"],
+    },
+  ],
+  // Tên chất liệu theo quy tắc docs/knowledge/05-chat-lieu-vai.md (UNI SUPER COOL, UNI QUICK DRY)
+  "knowsAbout": [
+    "Sản xuất đồng phục phòng tập Gym, Fitness, PT",
+    "Đồng phục Yoga, Pilates, Pickleball, chạy bộ",
+    "Đồng phục doanh nghiệp, áo Polo công sở",
+    "Công nghệ thoát ẩm một chiều UNI DRY",
+    "Vải UNI SUPER COOL, UNI QUICK DRY",
+  ],
   "sameAs": [
     "https://www.facebook.com/Dongphucunivi",
     "https://www.youtube.com/@dongphucunivi",
@@ -121,7 +173,7 @@ const websiteSchema = {
   "@id": "https://dongphucunivi.com/#website",
   "url": "https://dongphucunivi.com/",
   "name": "Đồng Phục Univi",
-  "description": "Đồng Phục Univi chuyên thiết kế và sản xuất đồng phục thể thao, đồng phục phòng tập, đồng phục huấn luyện viên chất lượng cao — xưởng sản xuất tại Hà Nội, giao hàng toàn quốc.",
+  "description": "Đồng Phục Univi chuyên thiết kế và sản xuất đồng phục thể thao, đồng phục phòng tập, đồng phục huấn luyện viên chất lượng cao, xưởng sản xuất tại Hà Nội, giao hàng toàn quốc",
   "publisher": {
     "@id": "https://dongphucunivi.com/#organization",
   },
@@ -279,6 +331,13 @@ function MyApp({ Component, pageProps: { session, meta, ...pageProps } }) {
 
   return (
     <>
+      {/* --font-site phải nằm ở :root để globals.css (--font-univi-site trên :root) và
+          các portal/modal ngoài div bọc trang đều nhận được Gilroy từ next/font. */}
+      <style jsx global>{`
+        :root {
+          --font-site: ${siteFont.style.fontFamily};
+        }
+      `}</style>
       <Head>
         <meta
           name="viewport"
@@ -344,7 +403,7 @@ function MyApp({ Component, pageProps: { session, meta, ...pageProps } }) {
         {/*
           ── JSON-LD: FAQPage thương hiệu ─────────────────────────────
           CHỈ inject ở trang chủ (pathname === "/").
-          Lưu ý: pages/[slug].tsx (DirectPost) hiện CHỈ inject BreadcrumbList,
+          Lưu ý: pages/[slug].tsx (DirectPost) inject BreadcrumbList + Article,
           chưa có FAQPage — FAQ của DirectPost chỉ hiển thị dạng HTML <details>.
         */}
         {isHomePage && homepageFaqSchema && (

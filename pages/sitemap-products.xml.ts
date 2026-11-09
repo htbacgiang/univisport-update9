@@ -3,17 +3,20 @@ import db from "../utils/db";
 import Product from "../models/Product";
 import { SITE_URL, pickLastmod, urlEntry, urlset } from "../lib/sitemap";
 import { PRODUCT_SLUG_FIXES, publicSlug } from "../lib/slugFixes";
+import { hasProductDetailContent } from "../lib/productContent";
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   try {
     await db.connectDb();
 
     const products = await Product.find({})
-      .select("slug updatedAt createdAt")
+      .select("slug content updatedAt createdAt")
       .lean();
 
+    // Chỉ đưa vào sitemap sản phẩm indexable — trang chưa có content đang noindex
+    // (pages/san-pham/[slug]); sitemap không được chứa URL noindex.
     const entries = (products as any[])
-      .filter((p) => p.slug)
+      .filter((p) => p.slug && hasProductDetailContent(p.content))
       .map((p) =>
         urlEntry(
           `${SITE_URL}/san-pham/${publicSlug(PRODUCT_SLUG_FIXES, p.slug)}`,

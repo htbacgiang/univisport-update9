@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { getImageProps } from "next/image";
+import Head from "next/head";
 import Link from "next/link";
 import {
   FaChevronLeft,
@@ -97,8 +98,6 @@ const slides = [
 
   {
     type: "video",
-    image: "/images/slide-03.webp",
-    mobileImage: "/images/slide-03.jpg",
     videoSrc: "/video-univi.mp4",
     videoLabel: "Video giới thiệu đồng phục thể thao Univi",
     secondaryLabel: "Xem video",
@@ -119,6 +118,67 @@ const slides = [
   },
 ];
 
+// ── Ảnh hero art-direction (Core Web Vitals) ─────────────────────────────────
+// Trước đây mỗi slide có 2 <Image> (desktop + mobile ẩn bằng CSS) và slide 1 gắn
+// priority cho CẢ HAI → mọi thiết bị đều preload + tải 2 ảnh full-width.
+// Nay dùng getImageProps + <picture>: trình duyệt chỉ tải 1 nguồn theo media query.
+const HERO_DESKTOP_MEDIA = "(min-width: 640px)"; // khớp breakpoint sm của Tailwind
+const HERO_MOBILE_MEDIA = "(max-width: 639px)";
+
+const getHeroImageSources = (slide, index) => {
+  const isLcp = index === 0;
+  const common = { alt: slide.smallHeading || "", fill: true, sizes: "100vw", quality: 75 };
+  const {
+    props: { srcSet: desktopSrcSet },
+  } = getImageProps({ ...common, src: slide.image });
+  const { props: mobileProps } = getImageProps({
+    ...common,
+    src: slide.mobileImage || slide.image,
+    loading: isLcp ? "eager" : "lazy",
+    ...(isLcp ? { fetchPriority: "high" } : {}),
+  });
+  return { desktopSrcSet, mobileProps };
+};
+
+function HeroPicture({ slide, index, className }) {
+  const { desktopSrcSet, mobileProps } = getHeroImageSources(slide, index);
+  return (
+    <picture>
+      <source media={HERO_DESKTOP_MEDIA} srcSet={desktopSrcSet} sizes="100vw" />
+      {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
+      <img {...mobileProps} className={className} />
+    </picture>
+  );
+}
+
+// Preload ảnh LCP (slide đầu) theo đúng media query: desktop chỉ preload ảnh desktop,
+// mobile chỉ preload ảnh mobile.
+function HeroLcpPreload({ slide }) {
+  const { desktopSrcSet, mobileProps } = getHeroImageSources(slide, 0);
+  return (
+    <Head>
+      <link
+        key="hero-lcp-desktop"
+        rel="preload"
+        as="image"
+        imageSrcSet={desktopSrcSet}
+        imageSizes="100vw"
+        media={HERO_DESKTOP_MEDIA}
+        fetchPriority="high"
+      />
+      <link
+        key="hero-lcp-mobile"
+        rel="preload"
+        as="image"
+        imageSrcSet={mobileProps.srcSet}
+        imageSizes="100vw"
+        media={HERO_MOBILE_MEDIA}
+        fetchPriority="high"
+      />
+    </Head>
+  );
+}
+
 export default function Banner() {
   // State hiển thị của carousel, modal form và chế độ xem video.
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -127,6 +187,40 @@ export default function Banner() {
   const [isAutoPaused, setIsAutoPaused] = useState(false);
   const [isVideoFocused, setIsVideoFocused] = useState(false);
   const [slideProgress, setSlideProgress] = useState(0);
+  const bannerRef = useRef(null);
+  const [isBannerInView, setIsBannerInView] = useState(true);
+
+  // IntersectionObserver: Tự động phát khi cuộn tới và tạm dừng khi cuộn khỏi màn hình
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsBannerInView(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Tải trước video nền sau khi slide đầu đã render (1s sau khi mount)
+  // để khi cuộn tới hoặc chuyển sang slide video thì video có sẵn và phát ngay lập tức không bị giật.
+  const [armedVideos, setArmedVideos] = useState({});
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setArmedVideos((prev) => ({ ...prev, [VIDEO_SLIDE_INDEX]: true }));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (slides[currentSlide]?.type === "video" && !armedVideos[currentSlide]) {
+      setArmedVideos((prev) => ({ ...prev, [currentSlide]: true }));
+    }
+  }, [currentSlide, armedVideos]);
 
   // Ref giữ DOM/timer để điều khiển video và tránh spam chuyển slide khi animation chưa xong.
   const modalRef = useRef(null);
@@ -142,7 +236,8 @@ export default function Banner() {
   const isSmartSlide = currentSlide === SMART_SLIDE_INDEX;
   const isVideoFeatureSlide = currentSlide === VIDEO_SLIDE_INDEX;
   const isLifestyleSlide = currentSlide === LIFESTYLE_SLIDE_INDEX;
-  const shouldPauseCarousel = isAutoPaused || isFormOpen || isVideoFocused;
+  const shouldPauseCarousel =
+    isAutoPaused || isFormOpen || isVideoFocused || !isBannerInView;
   // Overlay video luôn hiện khi carousel chạy bình thường; chỉ ẩn sau khi bấm "Xem video".
   const videoOverlayVisibility = isVideoFocused ? "opacity-0" : "opacity-100";
   // Vòng xanh trên nút pause desktop cho biết còn bao lâu thì tự chuyển slide.
@@ -301,9 +396,13 @@ export default function Banner() {
         activeVideoIndexRef.current = index;
       }
 
+      if (!isVideoFocused) {
+        video.muted = true;
+      }
       video.play().catch(() => { });
     });
-  }, [currentSlide, isVideoFocused, shouldPauseCarousel]);
+    // armedVideos: chạy lại khi src vừa được gắn để video active tự phát.
+  }, [currentSlide, isVideoFocused, shouldPauseCarousel, armedVideos]);
 
   useEffect(() => {
     // Dọn timer animation khi component unmount.
@@ -377,6 +476,7 @@ export default function Banner() {
 
   return (
     <>
+      <HeroLcpPreload slide={slides[0]} />
       {/* Heading ẩn phục vụ SEO/accessibility, không ảnh hưởng giao diện hero. */}
       <section aria-labelledby="homepage-heading">
         <h1 id="homepage-heading" className="sr-only">
@@ -385,7 +485,10 @@ export default function Banner() {
       </section>
 
       {/* Khung hero chính: mobile-first, desktop override bằng sm/lg để Tailwind 3.1 build ổn định. */}
-      <section className="relative aspect-[32/36] min-h-[420px] max-h-none w-full overflow-hidden bg-[#050505] font-[var(--font-univi-site)] sm:aspect-[16/8] sm:min-h-[590px] sm:max-h-screen lg:aspect-[16/7.5]">
+      <section
+        ref={bannerRef}
+        className="relative aspect-[32/36] min-h-[420px] max-h-none w-full overflow-hidden bg-[#050505] font-[var(--font-univi-site)] sm:aspect-[16/8] sm:min-h-[590px] sm:max-h-screen lg:aspect-[16/7.5]"
+      >
         {slides.map((slide, index) => {
           const isActive = currentSlide === index;
           return (
@@ -404,11 +507,11 @@ export default function Banner() {
                       backgroundVideoRefs.current[index] = node;
                     }}
                     className="absolute inset-0 h-full w-full object-cover object-center"
-                    src={slide.videoSrc}
-                    poster={slide.image}
+                    src={armedVideos[index] ? slide.videoSrc : undefined}
+                    autoPlay
                     muted
                     playsInline
-                    preload="auto"
+                    preload={armedVideos[index] ? "auto" : "none"}
                     aria-label={slide.videoLabel}
                     onLoadedMetadata={(event) => {
                       if (index === VIDEO_SLIDE_INDEX && !isVideoFocused) {
@@ -437,35 +540,18 @@ export default function Banner() {
 
               {slide.type === "image" && (
                 <>
-                  {/* Ảnh desktop/tablet: ưu tiên bố cục rộng, giữ mẫu sáng và không che mặt. */}
-                  <Image
-                    src={slide.image}
-                    alt={slide.smallHeading}
-                    fill
-                    className={`absolute inset-0 hidden h-full w-full object-cover sm:block ${index === LIFESTYLE_SLIDE_INDEX
-                      ? `object-[62%_center] ${isActive ? "motion-safe:animate-hero-image-scale" : ""}`
-                      : index === SMART_SLIDE_INDEX
-                        ? `object-center ${isActive ? "motion-safe:animate-hero-image-scale" : ""}`
-                        : "object-center"
+                  {/* Một <picture> duy nhất: desktop/tablet dùng slide.image, mobile dùng
+                      slide.mobileImage (crop dọc). Chỉ 1 ảnh được tải trên mỗi thiết bị. */}
+                  <HeroPicture
+                    slide={slide}
+                    index={index}
+                    className={`absolute inset-0 h-full w-full object-cover ${index === LIFESTYLE_SLIDE_INDEX
+                      ? "object-center sm:object-[62%_center]"
+                      : "object-center"
+                      } ${(index === LIFESTYLE_SLIDE_INDEX || index === SMART_SLIDE_INDEX) && isActive
+                        ? "motion-safe:animate-hero-image-scale"
+                        : ""
                       }`}
-                    quality={75}
-                    priority={index === 0}
-                    sizes="100vw"
-                  />
-                  {/* Ảnh mobile riêng để crop phù hợp màn dọc. */}
-                  <Image
-                    src={slide.mobileImage || slide.image}
-                    alt={slide.smallHeading}
-                    fill
-                    className={`absolute inset-0 block h-full w-full object-cover sm:hidden ${index === LIFESTYLE_SLIDE_INDEX
-                      ? `object-center ${isActive ? "motion-safe:animate-hero-image-scale" : ""}`
-                      : index === SMART_SLIDE_INDEX
-                        ? `object-center ${isActive ? "motion-safe:animate-hero-image-scale" : ""}`
-                        : "object-center"
-                      }`}
-                    quality={75}
-                    priority={index === 0}
-                    sizes="100vw"
                   />
                   {index === LIFESTYLE_SLIDE_INDEX && (
                     // Slide 3: gradient trái sang phải để text bên trái rõ mà mặt mẫu vẫn sáng.

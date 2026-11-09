@@ -13,57 +13,38 @@
 /* ===== Univi Font System =====
    Nội dung: SVN Gilroy Regular | Heading H1-H2: SVN Gilroy Medium
    H3-H4: SVN Gilroy Medium/Regular | Chú thích: SVN Gilroy Thin
-   Hero Banner: Anton Regular | Quote / câu chuyện thương hiệu: STIX Two Text Italic */
-@font-face {
-  font-family: "Univi Gilroy";
-  font-style: normal;
-  font-weight: 100;
-  font-display: block;
-  src: url("/fonts/SVN-Gilroy-Thin.otf") format("opentype");
-}
+   Hero Banner: Anton Regular | Quote / câu chuyện thương hiệu: STIX Two Text Italic
 
-@font-face {
-  font-family: "Univi Gilroy";
-  font-style: normal;
-  font-weight: 400;
-  font-display: block;
-  src: url("/fonts/SVN-Gilroy-Regular.otf") format("opentype");
-}
-
-@font-face {
-  font-family: "Univi Gilroy";
-  font-style: normal;
-  font-weight: 500;
-  font-display: block;
-  src: url("/fonts/SVN-Gilroy-Medium.otf") format("opentype");
-}
-
+   Gilroy: KHÔNG khai báo @font-face ở đây. Nguồn duy nhất là next/font trong
+   pages/_app.js, gán --font-site lên :root (tránh tải font 2 lần).
+   Anton / STIX: chỉ dùng ở /bo-suu-tap và /gioi-thieu → không preload, trình duyệt
+   chỉ tải khi trang thực sự dùng. WOFF2 nhẹ hơn ~62–65% so với TTF. */
 @font-face {
   font-family: "Univi Anton";
   font-style: normal;
   font-weight: 400;
-  font-display: block;
-  src: url("/fonts/Anton-Regular.ttf") format("truetype");
+  font-display: swap;
+  src: url("/fonts/Anton-Regular.woff2") format("woff2");
 }
 
 @font-face {
   font-family: "Univi STIX Two Text";
   font-style: normal;
   font-weight: 400;
-  font-display: block;
-  src: url("/fonts/STIXTwoText.ttf") format("truetype");
+  font-display: swap;
+  src: url("/fonts/STIXTwoText.woff2") format("woff2");
 }
 
 @font-face {
   font-family: "Univi STIX Two Text";
   font-style: italic;
   font-weight: 400;
-  font-display: block;
-  src: url("/fonts/STIXTwoText-Italic.ttf") format("truetype");
+  font-display: swap;
+  src: url("/fonts/STIXTwoText-Italic.woff2") format("woff2");
 }
 
 :root {
-  --font-univi-site: "Univi Gilroy", var(--font-site, Helvetica), Arial, sans-serif;
+  --font-univi-site: var(--font-site, Helvetica), Arial, sans-serif;
   --font-univi-hero: "Univi Anton", var(--font-univi-site);
   --font-univi-quote: "Univi STIX Two Text", Georgia, "Times New Roman", serif;
 }

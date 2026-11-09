@@ -557,6 +557,12 @@ export const getServerSideProps: GetServerSideProps<
     const thumbnailUrl = thumbnail?.url || "https://dongphucunivi.com/images/banner-home-1.jpg";
     const canonicalUrl = `https://dongphucunivi.com/bai-viet/${publicSlug(POST_SLUG_FIXES, slug)}`;
     const createdAtISO = new Date(createdAt).toISOString();
+    // dateModified lấy từ updatedAt (mongoose timestamps). Trước đây gán bằng createdAt.
+    const updatedRaw = (post as any).updatedAt;
+    const modifiedAtISO =
+      updatedRaw && new Date(updatedRaw).getTime() > new Date(createdAt).getTime()
+        ? new Date(updatedRaw).toISOString()
+        : createdAtISO;
 
     // ── Schema: Article + BreadcrumbList (3 cấp) + Author ──
     const articleSchema = [
@@ -582,7 +588,7 @@ export const getServerSideProps: GetServerSideProps<
           "height": 630,
         },
         "datePublished": createdAtISO,
-        "dateModified": createdAtISO,
+        "dateModified": modifiedAtISO,
         "url": canonicalUrl,
         "isPartOf": { "@id": "https://dongphucunivi.com/#website" },
         "publisher": { "@id": "https://dongphucunivi.com/#organization" },

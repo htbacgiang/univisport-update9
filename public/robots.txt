@@ -1,66 +1,62 @@
-# ============================================================
-# robots.txt — dongphucunivi.com
-# Lưu ý: bot khớp một nhóm User-agent riêng sẽ KHÔNG đọc quy tắc của nhóm *,
-# nên mỗi nhóm riêng phải tự khai báo lại các Disallow cần thiết.
-# ============================================================
+# =====================================================================
+# robots.txt - Đồng Phục Univi (https://dongphucunivi.com)
+# Lưu ý (RFC 9309): bot khớp một nhóm User-agent riêng sẽ KHÔNG đọc nhóm *,
+# nên mỗi nhóm riêng phải tự khai báo lại đầy đủ Allow/Disallow.
+#
+# /dang-nhap, /dang-ky, /auth/signin KHÔNG chặn ở đây: các trang này đã có
+# meta robots "noindex" (pages/_app.js). Chặn crawl sẽ khiến bot không đọc
+# được thẻ noindex. Ngoài ra "Disallow: /dang-ky" sẽ chặn nhầm cả
+# /dang-ky-dai-ly (trang đại lý đang index, có trong sitemap).
+# =====================================================================
 
-# Googlebot
-User-agent: Googlebot
-Allow: /
-Allow: /_next/static/
-Allow: /_next/image
-Disallow: /api/
-Disallow: /dashboard/
-Disallow: /search?
-
-# Google-Extended controls Gemini training and grounding (AI Overviews use Googlebot)
-User-agent: Google-Extended
-Disallow: /api/
-
-# ChatGPT / OpenAI
-User-agent: GPTBot
-Disallow: /api/
-
-User-agent: ChatGPT-User
-Disallow: /api/
-
-# Perplexity AI
-User-agent: PerplexityBot
-Disallow: /api/
-
-# Anthropic Claude
-User-agent: ClaudeBot
-Disallow: /api/
-
-User-agent: anthropic-ai
-Disallow: /api/
-
-# Meta AI
-User-agent: FacebookBot
-Disallow: /api/
-
-# Apple
-User-agent: Applebot
-Disallow: /api/
-
-User-agent: Applebot-Extended
-Disallow: /api/
-
-# Microsoft Bing + Copilot
-User-agent: Bingbot
-Disallow: /api/
-
-User-agent: msnbot
-Disallow: /api/
-
-# Default
+# 1. Quy tắc mặc định cho mọi trình thu thập dữ liệu (Googlebot, Cốc Cốc...)
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 Allow: /_next/static/
 Allow: /_next/image
 Disallow: /api/
 Disallow: /dashboard/
-Disallow: /search?
+Disallow: /search
+Disallow: /tim-kiem
+Disallow: /*?q=*
+Disallow: /*?s=*
 
-# Sitemap
+# 2. Bingbot (Microsoft Bing + Copilot)
+User-agent: Bingbot
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+Allow: /_next/static/
+Allow: /_next/image
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /search
+Disallow: /tim-kiem
+Disallow: /*?q=*
+Disallow: /*?s=*
+
+# 3. Trình thu thập AI Search & LLM (đọc nội dung public để trích dẫn, chặn vùng quản trị)
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: Claude-Web
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+Allow: /_next/static/
+Allow: /_next/image
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /search
+Disallow: /tim-kiem
+Disallow: /*?q=*
+Disallow: /*?s=*
+
+# 4. Sitemap
 Sitemap: https://dongphucunivi.com/sitemap.xml

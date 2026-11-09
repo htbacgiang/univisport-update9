@@ -7,10 +7,53 @@ import HeroSection1 from "../../components/univisport/HeroSection1";
 import CategoryGrid from '../../components/univisport/CategoryGrid';
 import CountdownTimer from '../../components/univisport/CountdownTimer';
 import FabricCardComponent from '../../components/univisport/FabricCardComponent';
-import CategoryShop from '../../components/univisport/CategoryShop';
 import SeoArticleSection from '../../components/univisport/SeoArticleSection';
-import InternalLinks from '../../components/univisport/InternalLinks';
+import ProductHubSection from '../../components/univisport/ProductHubSection';
 import { setPublicCacheHeaders } from '../../lib/cacheControl';
+import db from '../../utils/db';
+import Product from '../../models/Product';
+import { SIDEBAR_CATEGORIES, getCategoryPath } from '../../lib/siteCategories';
+import { ENTERPRISE_FLAT_SLUGS, ENTERPRISE_SLUG } from '../../lib/enterpriseFlatSlugs';
+import { getProductLineLabel } from '../../lib/productTaxonomy';
+import { PRODUCT_SLUG_FIXES, publicSlug } from '../../lib/slugFixes';
+import { hasProductDetailContent } from '../../lib/productContent';
+
+// ─── Nhóm sản phẩm cho khối ProductHubSection (SSR) ─────────────────
+// Thể thao: nhóm theo category. Doanh nghiệp: nhóm theo productLine (URL phẳng /dong-phuc-polo...).
+// Mỗi nhóm hiện tối đa HUB_PER_GROUP sản phẩm, ưu tiên sản phẩm đã có nội dung (đang index).
+const HUB_PER_GROUP = 8;
+
+async function buildProductHubGroups() {
+  await db.connectDb();
+  const docs = await Product.find({ visibleOnArticle: { $ne: false }, slug: { $exists: true, $ne: '' } })
+    .select('name slug image colors category productLine content displayOrder createdAt')
+    .lean();
+
+  const toItem = (p) => ({
+    name: p.name,
+    slug: publicSlug(PRODUCT_SLUG_FIXES, p.slug),
+    image: p.colors?.[0]?.image || p.image || '',
+    _indexable: hasProductDetailContent(p.content),
+    _order: Number.isFinite(p.displayOrder) ? p.displayOrder : 0,
+    _created: p.createdAt ? new Date(p.createdAt).getTime() : 0,
+  });
+  const finish = (key, title, href, items) => {
+    const sorted = items.sort((a, b) =>
+      (b._indexable - a._indexable) || (a._order - b._order) || (b._created - a._created));
+    return {
+      key, title, href, total: sorted.length,
+      products: sorted.slice(0, HUB_PER_GROUP).map(({ name, slug, image }) => ({ name, slug, image })),
+    };
+  };
+
+  const sportGroups = SIDEBAR_CATEGORIES.map(([cat, label]) =>
+    finish(cat, label, `/${getCategoryPath(cat)}`, docs.filter((p) => p.category === cat).map(toItem)));
+  const enterpriseGroups = Object.entries(ENTERPRISE_FLAT_SLUGS).map(([line, flatSlug]) =>
+    finish(`dn-${line}`, getProductLineLabel(ENTERPRISE_SLUG, line), `/${flatSlug}`,
+      docs.filter((p) => p.category === ENTERPRISE_SLUG && p.productLine === line).map(toItem)));
+
+  return [...sportGroups, ...enterpriseGroups].filter((g) => g.total > 0);
+}
 
 // ─── DEFAULT META — dùng cho cả try và catch ─────────────────
 const DEFAULT_META = {
@@ -65,7 +108,7 @@ const COLLECTION_SCHEMA = [
   }
 ];
 
-const ProductsPage = ({ relatedPosts }) => {
+const ProductsPage = ({ relatedPosts, productGroups = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -163,6 +206,7 @@ const ProductsPage = ({ relatedPosts }) => {
 
       <CountdownTimer />
       <CategoryGrid />
+      <ProductHubSection groups={productGroups} />
       <HeroSection1 />
       <FabricCardComponent />
       <SeoArticleSection />
@@ -173,24 +217,21 @@ const ProductsPage = ({ relatedPosts }) => {
 // ─── SERVER SIDE PROPS ────────────────────────────────────────
 export const getServerSideProps = async ({ res } = {}) => {
   setPublicCacheHeaders(res);
-  try {
-    const posts = await readPostsFromDb(3, 0);
-    const formattedPosts = formatPosts(posts);
-    return {
-      props: {
-        relatedPosts: formattedPosts,
-        meta: { ...DEFAULT_META, schema: COLLECTION_SCHEMA },
-      },
-    };
-  } catch (error) {
-    console.error('Error fetching related posts:', error);
-    return {
-      props: {
-        relatedPosts: [],
-        meta: { ...DEFAULT_META, schema: COLLECTION_SCHEMA },
-      },
-    };
-  }
+  // Hai nguồn dữ liệu độc lập: lỗi một bên không làm mất bên kia.
+  const [postsResult, groupsResult] = await Promise.allSettled([
+    readPostsFromDb(3, 0).then(formatPosts),
+    buildProductHubGroups(),
+  ]);
+  if (postsResult.status === 'rejected') console.error('Error fetching related posts:', postsResult.reason);
+  if (groupsResult.status === 'rejected') console.error('Error building product hub:', groupsResult.reason);
+
+  return {
+    props: {
+      relatedPosts: postsResult.status === 'fulfilled' ? postsResult.value : [],
+      productGroups: groupsResult.status === 'fulfilled' ? groupsResult.value : [],
+      meta: { ...DEFAULT_META, schema: COLLECTION_SCHEMA },
+    },
+  };
 };
 
 export default ProductsPage;

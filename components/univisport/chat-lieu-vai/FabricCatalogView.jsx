@@ -118,14 +118,35 @@ export default function FabricCatalogView({
           1. TABS CHO TỪNG LOẠI VẢI (MOBILE: 3 TRÊN - 2 DƯỚI, DESKTOP: 1 HÀNG)
       ───────────────────────────────────────────────────────────── */}
       <div className="mb-3 sm:mb-4 flex justify-center">
-        <div className="w-full sm:w-auto bg-white/95 p-1.5 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-sm grid grid-cols-6 sm:flex sm:items-center gap-1.5 sm:gap-2">
+        <div
+          role="tablist"
+          aria-label="Chọn loại vải"
+          onKeyDown={(e) => {
+            const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+            if (!keys.includes(e.key)) return;
+            e.preventDefault();
+            const n = FABRIC_MATERIALS.length;
+            const cur = FABRIC_MATERIALS.findIndex(f => f.id === currentFabric.id);
+            const next =
+              e.key === 'Home' ? 0 :
+              e.key === 'End' ? n - 1 :
+              e.key === 'ArrowRight' ? (cur + 1) % n : (cur - 1 + n) % n;
+            const nextId = FABRIC_MATERIALS[next].id;
+            handleSelectTab(nextId);
+            document.getElementById(`tab-${nextId}`)?.focus();
+          }}
+          className="w-full sm:w-auto bg-white/95 p-1.5 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-sm grid grid-cols-6 sm:flex sm:items-center gap-1.5 sm:gap-2"
+        >
           {FABRIC_MATERIALS.map((fabric, idx) => {
-            const isActive = activeTab === fabric.id;
+            const isActive = currentFabric.id === fabric.id;
             const mobileColSpan = idx < 3 ? 'col-span-2' : 'col-span-3';
             return (
               <button
                 key={fabric.id}
                 id={`tab-${fabric.id}`}
+                type="button"
+                aria-controls="fabric-tabpanel"
+                tabIndex={isActive ? 0 : -1}
                 onClick={() => handleSelectTab(fabric.id)}
                 className={`${mobileColSpan} sm:w-auto group px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-bold text-[10px] min-[360px]:text-[11px] sm:text-xs md:text-sm tracking-tight transition-all duration-200 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-center ${isActive
                   ? 'bg-[#105d97] text-white shadow-sm scale-[1.01]'
@@ -148,7 +169,12 @@ export default function FabricCatalogView({
       {/* ─────────────────────────────────────────────────────────────
           2. GIAO DIỆN CATALOG CHUẨN 100% NHƯ ẢNH MẪU (THU GỌN VỪA KHUNG)
       ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white container p-2 sm:p-5 md:p-6  transition-all duration-300">
+      <div
+        id="fabric-tabpanel"
+        role="tabpanel"
+        aria-labelledby={`tab-${currentFabric.id}`}
+        className="bg-white container p-2 sm:p-5 md:p-6  transition-all duration-300"
+      >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
 
           {/* ═════════════════════════════════════════════════════════

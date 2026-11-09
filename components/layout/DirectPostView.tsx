@@ -246,6 +246,14 @@ const DirectPostView: React.FC<Props> = ({ post, randomFeedbacks = [] }) => {
               {/* Article Header */}
               <div className="mb-4">
                 <h1 className="md:text-3xl text-xl font-bold text-gray-900 mb-4">{title}</h1>
+                {post.createdAt && !Number.isNaN(new Date(post.createdAt).getTime()) && (
+                  <p className="text-sm text-gray-500 mb-3">
+                    Ngày đăng:{" "}
+                    <time dateTime={new Date(post.createdAt).toISOString()}>
+                      {new Date(post.createdAt).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
+                    </time>
+                  </p>
+                )}
                 <div className="flex items-center justify-between">
                   <Share url={`${host}/${slug}`} />
                 </div>

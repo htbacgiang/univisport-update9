@@ -175,7 +175,7 @@ function getCoreKnowledgeRules(): string {
 - Câu định vị chuẩn [FACT]: "Đồng Phục Univi là đơn vị TIÊN PHONG cung cấp giải pháp đồng phục thể thao chuyên nghiệp cho các chuỗi phòng tập và các đội nhóm tập Gym, Fitness, Pickleball, Yoga, Running, Pilates, MMA... tại Việt Nam."
 - Luôn dùng từ "TIÊN PHONG".
 - TUYỆT ĐỐI CẤM CÁC TỪ SAU: "số 1", "dẫn đầu", "hàng đầu", "tốt nhất", "giá rẻ nhất", "siêu rẻ", "mua ngay", "chốt đơn", "chất lượng gấp đôi giá bằng một nửa".
-- Bản chất mô hình: Univi cung cấp giải pháp đồng phục và sản xuất trực tiếp tại xưởng (xưởng Đan Phượng, Hà Nội), không qua trung gian. Phục vụ khách hàng B2B toàn quốc (chuỗi phòng tập, CLB, doanh nghiệp, đội nhóm). Không định nghĩa Univi là "xưởng may" đơn thuần.
+- Bản chất mô hình: Univi cung cấp giải pháp đồng phục và sản xuất trực tiếp tại xưởng (xưởng Chương Mỹ, Hà Nội), không qua trung gian. Phục vụ khách hàng B2B toàn quốc (chuỗi phòng tập, CLB, doanh nghiệp, đội nhóm). Không định nghĩa Univi là "xưởng may" đơn thuần.
 
 [HỆ THỐNG 5 DÒNG VẢI CHUYÊN DỤNG CHUẨN CỦA UNIVI]
 1. UNI QUICKDRY (UNIA01): 88% Polyester – 12% Elastane, 180 GSM (mỏng, mịn, co giãn, nhanh khô; hợp Gym, Running, Kickfit, MMA, hội viên).

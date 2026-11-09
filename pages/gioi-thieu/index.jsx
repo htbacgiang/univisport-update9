@@ -85,11 +85,15 @@ export default function AboutUs({ meta }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-2">
+              {/* Đoạn mở đầu định danh thực thể (entity definition) cho AI Search.
+                  Chỉ dùng dữ kiện [FACT] trong docs/knowledge (01, 02, 03, 04, 05) — duyệt 09/11/2026. */}
               <p className="text-gray-700 leading-6 text-base">
-                <span className="font-semibold text-[#105d97]">Đồng Phục Univi</span> is TIÊN PHONG cung cấp giải pháp đồng phục thể thao chuyên nghiệp cho các chuỗi phòng tập và các đội nhóm tập Gym, Fitness, Pickleball, Yoga, Running, Pilates, MMA... tại Việt Nam.
+                <span className="font-semibold text-[#105d97]">Đồng Phục Univi</span> (Univi Sport), thương hiệu của Công ty Cổ phần Tập đoàn Unicore Holdings, là đơn vị TIÊN PHONG cung cấp giải pháp đồng phục thể thao chuyên nghiệp cho các chuỗi phòng tập và các đội nhóm tập Gym, Fitness, Pickleball, Yoga, Running, Pilates, MMA... tại Việt Nam. Thành lập năm <span className="font-semibold text-[#105d97]">2017</span>, do{" "}
+                <Link href="/tac-gia/tran-hien" className="font-semibold text-[#105d97] hover:underline">Trần Hiền</Link>{" "}
+                đồng sáng lập, Univi khởi đầu với đồng phục doanh nghiệp và từ năm 2023 tập trung vào đồng phục thể thao chuyên sâu. Univi dùng các dòng vải UNI SUPER COOL, UNI QUICK DRY cùng công nghệ thoát ẩm một chiều UNI DRY; vải được kiểm định an toàn với da trước khi đưa vào sản xuất.
               </p>
               <p className="text-gray-700 leading-6 text-base">
-                Thành lập năm <span className="font-semibold text-[#105d97]">2017</span>, Univi khởi đầu với đồng phục doanh nghiệp và từ năm 2023 tập trung vào đồng phục thể thao chuyên sâu – từ thiết kế, lựa chọn chất liệu đến sản xuất và kiểm soát chất lượng.
+                Univi sản xuất trực tiếp tại xưởng khoảng <span className="font-semibold text-[#105d97]">2.000 m²</span> ở Chương Mỹ, Hà Nội, công suất khoảng <span className="font-semibold text-[#105d97]">100.000 sản phẩm/tháng</span>. Quy trình khép kín gồm thiết kế mockup, triển khai rập và may mẫu, cắt, may, in/thêu và kiểm soát chất lượng (QC) từ bán thành phẩm đến thành phẩm. Khách hàng của Univi gồm các chuỗi phòng tập, CLB như KickFit Sport, Welly Fitness, ZENFIT, FitCaree và các doanh nghiệp như Sun Group, Vingroup, Thành Công Group, Tập đoàn Công nghiệp Than – Khoáng sản Việt Nam.
               </p>
               <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

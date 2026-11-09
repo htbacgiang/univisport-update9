@@ -24,11 +24,10 @@ import { DEFAULT_HOMEPAGE_FAQS } from "../data/homepageFaqs";
 import { normalizeCategoryHref } from "../lib/siteCategories";
 import { setPublicCacheHeaders } from "../lib/cacheControl";
 
-// FAQComponent dùng window.AudioContext + Facebook SDK → không SSR được
-const FAQComponent = dynamic(
-  () => import("../components/univisport/FAQComponent"),
-  { ssr: false }
-);
+// FAQComponent PHẢI SSR: JSON-LD FAQPage (pages/_app.js) dựng từ cùng mảng homepageFaqs,
+// nên câu hỏi + câu trả lời phải có trong HTML server để khớp schema (tránh schema drift).
+// window.AudioContext / iframe Facebook chỉ chạy trong event handler & useEffect → an toàn khi SSR.
+const FAQComponent = dynamic(() => import("../components/univisport/FAQComponent"));
 
 // CTABannerSection dùng window.location.pathname → không SSR được
 const CTABannerSection = dynamic(
@@ -151,6 +150,7 @@ export default function Home({
           </Link>
         </div>
       </div>
+
       <CTABannerSection />
     </DefaultLayout2>
   );
@@ -160,15 +160,16 @@ export default function Home({
 // VIDEO SECTION
 // ─────────────────────────────────────────────────────────────
 const HOME_VIDEO_SRC = "/video-univi-2-baseline.mp4";
-const HOME_VIDEO_POSTER = "/images/video-posters/home-video.webp";
 
 function VideoSection() {
   const videoRef = useRef(null);
-  // Chỉ gắn src khi khung video sắp vào viewport → trước đó trình duyệt không tải byte video nào.
+  const isUserPausedRef = useRef(false);
+  // Tải trước video khi khung video cách màn hình 400px
   const { ref: wrapperRef, isInView: shouldLoadVideo } = useInView({
-    rootMargin: "200px 0px",
+    rootMargin: "400px 0px",
   });
   const [playing, setPlaying] = useState(false);
+  const [isUserPaused, setIsUserPaused] = useState(false);
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -181,38 +182,40 @@ function VideoSection() {
     return `${minutes}:${rest.toString().padStart(2, "0")}`;
   };
 
-  // IntersectionObserver: Tự động phát video khi scroll vào view.
-  // Chỉ khởi tạo sau khi src đã được gắn, để play() không chạy trên thẻ video rỗng.
+  // IntersectionObserver: Tự động phát video ngay khi cuộn tới màn hình
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !shouldLoadVideo) return;
 
+    // Đảm bảo video ở chế độ tắt tiếng để trình duyệt luôn cho phép autoplay
+    video.muted = true;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Thử phát video (nếu trình duyệt chặn âm thanh tự động, fallback sang muted để phát được)
-          const promise = video.play();
-          if (promise !== undefined) {
-            promise
-              .then(() => {
-                setPlaying(true);
-              })
-              .catch(() => {
-                // Trình duyệt chặn autoplay có tiếng -> Chuyển sang tắt tiếng (muted) và phát lại
-                video.muted = true;
-                setMuted(true);
-                video
-                  .play()
-                  .then(() => setPlaying(true))
-                  .catch(() => setPlaying(false));
-              });
+          if (!isUserPausedRef.current) {
+            const promise = video.play();
+            if (promise !== undefined) {
+              promise
+                .then(() => {
+                  setPlaying(true);
+                })
+                .catch(() => {
+                  video.muted = true;
+                  setMuted(true);
+                  video
+                    .play()
+                    .then(() => setPlaying(true))
+                    .catch(() => setPlaying(false));
+                });
+            }
           }
         } else {
           video.pause();
           setPlaying(false);
         }
       },
-      { threshold: 0.25 }
+      { threshold: 0.1 }
     );
 
     observer.observe(video);
@@ -247,8 +250,12 @@ function VideoSection() {
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
+      isUserPausedRef.current = false;
+      setIsUserPaused(false);
       video.play().then(() => setPlaying(true)).catch(() => { });
     } else {
+      isUserPausedRef.current = true;
+      setIsUserPaused(true);
       video.pause();
       setPlaying(false);
     }
@@ -277,16 +284,18 @@ function VideoSection() {
         <video
           ref={videoRef}
           src={shouldLoadVideo ? HOME_VIDEO_SRC : undefined}
+          autoPlay
           muted={muted}
           loop
           playsInline
-          preload="none"
-          poster={HOME_VIDEO_POSTER}
+          preload={shouldLoadVideo ? "auto" : "none"}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
           onClick={togglePlay}
-          style={{ width: "100%", display: "block", cursor: "pointer" }}
+          style={{ width: "100%", aspectRatio: "16 / 9", display: "block", cursor: "pointer", objectFit: "cover" }}
         />
 
-        {!playing && (
+        {!playing && isUserPaused && (
           <button
             type="button"
             onClick={togglePlay}

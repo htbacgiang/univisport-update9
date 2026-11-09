@@ -131,7 +131,7 @@ const FAQComponent = ({ items = DEFAULT_HOMEPAGE_FAQS }) => {
       {/* Background decorative elements */}
       <div className="absolute bottom-0 right-0 w-96 h-96 gradient-faq-bg-decoration rounded-full blur-3xl translate-x-48 translate-y-48"></div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 ">
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="md:text-2xl text-xl font-medium tracking-tight leading-6 uppercase md:mb-4 mb-2 gradient-faq-title mx-auto">
@@ -255,12 +255,12 @@ const FAQComponent = ({ items = DEFAULT_HOMEPAGE_FAQS }) => {
           </div>
 
           {/* Media Section - Desktop Only */}
-          <div className="relative w-fit mx-auto lg:mx-0 hidden lg:block lg:col-span-1">
-            <div className="relative rounded-xl overflow-hidden shadow-xl">
-              {hasVideoStarted && currentFaq.video ? (
-                <div className="relative aspect-[9/16] w-64">
+          <div className="relative w-full hidden lg:flex lg:flex-col lg:items-center lg:col-span-1 lg:sticky lg:top-24">
+            <div className="w-[290px] xl:w-[330px] max-w-full">
+              <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[9/16] w-full bg-slate-900">
+                {hasVideoStarted && currentFaq.video ? (
                   <iframe
-                    src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(currentFaq.video)}&show_text=false&autoplay=true&muted=${isMuted}&playsinline=true&controls=true&width=256&height=455`}
+                    src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(currentFaq.video)}&show_text=false&autoplay=true&muted=${isMuted}&playsinline=true&controls=true&width=330&height=586`}
                     width="100%"
                     height="100%"
                     style={{ border: 'none', overflow: 'hidden' }}
@@ -269,75 +269,74 @@ const FAQComponent = ({ items = DEFAULT_HOMEPAGE_FAQS }) => {
                     loading="lazy"
                     allowFullScreen={true}
                     allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; microphone; camera; fullscreen"
-                    className="rounded-xl"
+                    className="w-full h-full rounded-2xl"
                     key={`desktop-${selectedMedia}-${isMuted}`} // Force reload khi muted state thay đổi
                   />
-                </div>
-              ) : (
-                <div
-                  className={`relative aspect-[9/16] w-64 ${currentFaq.video ? "cursor-pointer" : ""
-                    }`}
-                  onClick={() => {
-                    if (!currentFaq.video) return;
-                    handleVideoInteraction();
-                    setHasVideoStarted(true);
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={currentFaq.image}
-                    alt={currentFaq.question}
-                    width={256}
-                    height={455}
-                    loading="lazy"
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 gradient-faq-image-overlay"></div>
+                ) : (
+                  <div
+                    className={`relative w-full h-full ${currentFaq.video ? "cursor-pointer" : ""
+                      }`}
+                    onClick={() => {
+                      if (!currentFaq.video) return;
+                      handleVideoInteraction();
+                      setHasVideoStarted(true);
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={currentFaq.image}
+                      alt={currentFaq.question}
+                      width={330}
+                      height={586}
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 gradient-faq-image-overlay"></div>
 
-                  {/* Play button overlay */}
-                  {currentFaq.video && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 bg-blue-600/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700/90 transition-colors duration-200">
-                        <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
+                    {/* Play button overlay */}
+                    {currentFaq.video && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 bg-blue-600/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700/90 transition-all duration-200 hover:scale-110">
+                          <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Topic indicator */}
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-md">
+                        <p className="text-xs text-slate-700 font-medium line-clamp-2">{currentFaq.question}</p>
                       </div>
                     </div>
-                  )}
-
-                  {/* Topic indicator */}
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-md">
-                      <p className="text-xs text-slate-700 font-medium line-clamp-2">{currentFaq.question}</p>
-                    </div>
                   </div>
+                )}
+              </div>
+
+              {/* Facebook Button */}
+              {currentFaq.video && (
+                <div className="mt-3">
+                  <a
+                    href={currentFaq.video}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center gap-2 w-full justify-center gradient-faq-button text-white px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 font-medium text-sm xl:text-base"
+                  >
+                    <div className="relative">
+                      <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                        <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                      </div>
+                      <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                    </div>
+                    <span>Video Facebook</span>
+                    <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-300" />
+                  </a>
                 </div>
               )}
             </div>
-
-
-            {/* Facebook Button */}
-            {currentFaq.video && (
-              <div className="mt-2">
-                <a
-                  href={currentFaq.video}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group inline-flex items-center gap-1.5 w-64 justify-center gradient-faq-button text-white px-2 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 font-medium text-base"
-                >
-                  <div className="relative">
-                    <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                      <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                      </svg>
-                    </div>
-                    <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                  </div>
-                  <span>Video Facebook </span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            )}
           </div>
         </div>
       </div>

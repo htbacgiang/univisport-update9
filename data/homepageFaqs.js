@@ -1,48 +1,49 @@
+// FAQ trang chủ mặc định: dùng khi DB chưa có bản ghi `homepagefaqsettings`
+// hoặc khi trang chủ không đọc được DB. Giữ nội dung KHỚP với bản trong DB.
+// Chốt ngày 09/11/2026 theo reports/homepage-faq-2026-11-09/faq-review.md (chỉ dùng dữ kiện có nguồn).
+const faq = (question, answer, order) => ({
+  question,
+  answer,
+  image: "/images/thumb-univi.jpg",
+  video: "",
+  isVisible: true,
+  order,
+});
+
 export const DEFAULT_HOMEPAGE_FAQS = [
-  {
-    question: "Tại sao HLV GYM nên mặc đồ thể thao chuyên dụng?",
-    answer:
-      "3 lý do vì sao huấn luyện viên GYM nên mặc đồ thể thao chuyên dụng:\n\nThứ nhất, mang sự chuyên nghiệp và tạo niềm tin với học viên.\n\nThứ hai, hỗ trợ vận động tối ưu và tránh chấn thương.\n\nThứ ba, khẳng định uy tín thương hiệu cá nhân.",
-    image: "/images/thumb-univi.jpg",
-    video: "https://www.facebook.com/reel/699400322648329",
-    isVisible: true,
-    order: 0,
-  },
-  {
-    question: "Chất liệu vải của Univi có gì đặc biệt?",
-    answer:
-      "Univi sử dụng hai dòng vải độc quyền là Uni Quick Dry và Uni Super Cool trên thị trường Việt Nam. Nhờ mô hình sản xuất khép kín, không qua trung gian, Univi tối ưu được chi phí sản xuất và giá thành.\n\nMục tiêu của Univi là giúp người Việt được sử dụng sản phẩm thể thao chất lượng cao, ngang tầm quốc tế, với mức giá tốt nhất. Mức giá ưu đãi này là đặc quyền chỉ dành cho các đơn hàng đồng phục khi đặt số lượng lớn.",
-    image: "/images/thumb-univi.jpg",
-    video: "https://www.facebook.com/reel/24575862468782559",
-    isVisible: true,
-    order: 1,
-  },
-  {
-    question: "Định vị của Univi trên thị trường là gì?",
-    answer:
-      "Chúng tôi định vị là đơn vị tiên phong cung cấp đồng phục gym, đồng phục cho HLV, đồng phục thể thao số 1 tại thị trường Việt Nam. Bất kể ai cần đồng phục áo gym, áo polo thể thao hoặc nguồn phôi thể thao số lượng lớn thì hãy tìm tới chúng tôi. Chất liệu sánh ngang với các thương hiệu lớn trên thế giới và giá thành rất rất Việt Nam, ai cũng có thể tiếp cận và sử dụng sản phẩm của chúng tôi.\n\nĐập tan tư duy hàng tốt, hàng chất lượng giá thành rất cao, Local brand không thể làm tốt như hàng Trung Quốc",
-    image: "/images/thumb-univi.jpg",
-    video: "https://www.facebook.com/reel/1860548484537405",
-    isVisible: true,
-    order: 2,
-  },
-  {
-    question: "Khách hàng của Univi là ai?",
-    answer:
-      "Univi hướng tới ba nhóm khách hàng chính:\n\nKhách hàng trực tiếp (B2B/B2C): Huấn luyện viên, chuỗi phòng tập gym, và các đội nhóm đang cần đặt đồng phục thể thao từ 10 chiếc trở lên.\n\nĐơn vị thương mại đồng phục: Các đơn vị này cần đồng phục thể thao số lượng lớn nhưng không tự sản xuất được nguồn phôi gym và polo thể thao chất lượng cao.\n\nKênh bán lẻ: Các shop kinh doanh thời trang thể thao, dụng cụ thể thao, cộng tác viên (CTV) và KOC.",
-    image: "/images/thumb-univi.jpg",
-    video: "https://www.facebook.com/reel/1432193287841279",
-    isVisible: true,
-    order: 3,
-  },
-  {
-    question:
-      "Chất liệu vải của Univi có khác gì so với vải thun lạnh ngoài thị trường không?",
-    answer:
-      "Chất liệu vải bên Univi khác hoàn toàn với vải thun lạnh ngoài thị trường. Vải của Univi được nghiên cứu và chọn lọc kỹ lưỡng để đáp ứng các yêu cầu đặc thù của đồng phục thể thao, đặc biệt là dành cho HLV gym và các hoạt động vận động mạnh.",
-    image: "/images/thumb-univi.jpg",
-    video: "https://www.facebook.com/reel/792953463467328",
-    isVisible: true,
-    order: 4,
-  },
+  faq(
+    "Đồng Phục Univi sản xuất những dòng đồng phục nào?",
+    "Đồng Phục Univi là xưởng sản xuất trực tiếp hai nhóm sản phẩm: đồng phục thể thao chuyên dụng (áo PT, đồng phục phòng tập Gym, Yoga, Pilates, Pickleball, chạy bộ, MMA) và đồng phục doanh nghiệp (áo Polo công sở, đồng phục sự kiện, teambuilding), dùng các dòng vải thể thao của Univi.",
+    0
+  ),
+  faq(
+    "Số lượng đặt may tối thiểu tại Univi là bao nhiêu?",
+    "Univi nhận đơn từ 10 sản phẩm với mẫu và vải có sẵn. Với đơn thiết kế riêng, Univi tư vấn số lượng tối thiểu theo từng mẫu khi trao đổi chi tiết.",
+    1
+  ),
+  faq(
+    "Chất liệu vải đồng phục của Univi có gì khác biệt?",
+    "Univi dùng các dòng vải thể thao chuyên dụng như UNI SUPER COOL, UNI QUICK DRY và công nghệ thoát ẩm một chiều UNI DRY, giúp mồ hôi thoát ra ngoài thay vì thấm ngược vào da. Vải được kiểm định an toàn với da trước khi đưa vào sản xuất. Univi tư vấn dòng vải theo bộ môn và cường độ vận động.",
+    2
+  ),
+  faq(
+    "Quy trình và thời gian sản xuất một đơn đồng phục như thế nào?",
+    "Quy trình gồm 5 bước: lên ý tưởng, thiết kế mockup (miễn phí), chọn chất liệu, sản xuất áo mẫu, kiểm tra và duyệt mẫu trước khi sản xuất toàn bộ đơn. Mẫu có sẵn được giao nhanh; với đơn thiết kế riêng, tiến độ phụ thuộc số lượng và thời điểm, Univi báo lịch cụ thể khi chốt đơn. Xưởng khoảng 2.000 m² tại Chương Mỹ, Hà Nội, công suất khoảng 100.000 sản phẩm/tháng.",
+    3
+  ),
+  faq(
+    "Chi phí may đồng phục tại Univi được tính như thế nào?",
+    "Đơn giá phụ thuộc 4 yếu tố: dòng vải, kiểu dáng thiết kế, công nghệ in/thêu logo và tổng số lượng. Khách đặt trực tiếp tại xưởng Univi, không qua trung gian, và được xuất hoá đơn VAT. Liên hệ hotline 0834.204.999 để nhận báo giá chi tiết.",
+    4
+  ),
+  faq(
+    "Univi có giao hàng toàn quốc và cho duyệt mẫu trước không?",
+    "Có. Univi giao hàng toàn quốc từ Hà Nội (văn phòng: Nhà D14, ngõ 180 Thanh Bình, phường Hà Đông). Trước khi sản xuất hàng loạt, khách nhận áo mẫu để kiểm tra form, đường may, màu sắc và logo, rồi duyệt lần cuối.",
+    5
+  ),
+  faq(
+    "Univi kiểm soát chất lượng sản phẩm như thế nào?",
+    "Bộ phận QC của Univi kiểm soát chất lượng từ bán thành phẩm đến thành phẩm, trước mỗi công đoạn tiếp theo. Áo mẫu được khách duyệt trước khi sản xuất toàn bộ đơn. Điều kiện bảo hành chi tiết xem tại trang Chính sách bảo hành.",
+    6
+  ),
 ];

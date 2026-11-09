@@ -8,36 +8,10 @@ export default function Document() {
         <meta name="google-site-verification" content="kNL7mAgNeJ_YF0n5xp1aWaEILSmJvt4hFsNJPOpMujY" />
         <link rel="icon" href="/favicon.ico" />
         <meta name="p:domain_verify" content="46fb224c998b15a6ef1c551d52257138" />
-        
-        {/* Preload critical web fonts để loại bỏ hoàn toàn hiện tượng nhảy/đổi font (FOUT) */}
-        <link
-          rel="preload"
-          href="/fonts/SVN-Gilroy-Regular.otf"
-          as="font"
-          type="font/otf"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/fonts/SVN-Gilroy-Medium.otf"
-          as="font"
-          type="font/otf"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/fonts/Anton-Regular.ttf"
-          as="font"
-          type="font/ttf"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/fonts/STIXTwoText-Italic.ttf"
-          as="font"
-          type="font/ttf"
-          crossOrigin="anonymous"
-        />
+        {/* Không preload font thủ công ở đây:
+            - Gilroy: next/font (pages/_app.js) tự preload bản WOFF2 đã hash.
+            - Anton / STIX: chỉ dùng ở /bo-suu-tap, /gioi-thieu → tải theo nhu cầu.
+            Trước đây preload 4 file OTF/TTF (~1,1MB tính cả bản trùng của next/font) ở MỌI trang. */}
       </Head>
       <body>
         <Main />
