@@ -1,6 +1,11 @@
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CheckCircle, Target, Scale, Lightbulb, Zap, Network, Shirt, Building2, Users } from 'lucide-react';
+import {
+  CheckCircle, Target, Scale, Lightbulb, Zap, Network, Shirt, Building2, Users,
+  ChevronLeft, ChevronRight, Maximize2, X, Images
+} from 'lucide-react';
+import UniviOrderProcess from './order-process/UniviOrderProcess';
 
 const SectionHeader = ({ roman, title, highlight }) => (
   <div className="text-center mb-8">
@@ -31,6 +36,623 @@ const Bullet = ({ children }) => (
     {children}
   </li>
 );
+
+const PRODUCTION_GALLERY_IMAGES = [
+  {
+    src: '/images/xuong/anh-xuong-2.jpg',
+    alt: 'Khu vực xưởng sản xuất đồng phục của Univi',
+    title: 'Khu vực sản xuất chính',
+    caption: 'Hệ thống chuyền may hiện đại đáp ứng các đơn hàng đồng phục thể thao & doanh nghiệp số lượng lớn.',
+  },
+  {
+    src: '/images/xuong/anh-xuong-1.jpg',
+    alt: 'Dây chuyền máy may công nghiệp chuyên dụng Univi',
+    title: 'Dây chuyền may công nghiệp',
+    caption: 'Trang thiết bị may chuyên dụng tối ưu cho các dòng vải thun thể thao co giãn và áo polo cao cấp.',
+  },
+  {
+    src: '/images/xuong/anh-xuong-3.jpg',
+    alt: 'Quy mô nhà xưởng và kho lưu trữ nguyên phụ liệu Univi',
+    title: 'Quy mô nhà xưởng & kho vật liệu',
+    caption: 'Không gian sản xuất đạt chuẩn cùng kho vải và nguyên phụ liệu phong phú sẵn sàng vận hành liên tục.',
+  },
+  {
+    src: '/images/xuong/anh-xuong-4.jpg',
+    alt: 'Khu vực thiết kế, ra rập và hoàn thiện mẫu đồng phục',
+    title: 'Phòng thiết kế & phát triển mẫu',
+    caption: 'Đội ngũ kỹ thuật rập và thiết kế mẫu chuyên nghiệp, hiện thực hóa mọi ý tưởng sản phẩm theo yêu cầu.',
+  },
+  {
+    src: '/images/xuong/anh-xuong-5.jpg',
+    alt: 'Quy trình kiểm soát chất lượng KCS và hoàn thiện xuất xưởng',
+    title: 'Kiểm soát chất lượng (KCS) & Hoàn thiện',
+    caption: 'Mỗi sản phẩm đều được kiểm tra kỹ lưỡng về form dáng, đường may và thông số trước khi xuất xưởng.',
+  },
+];
+
+function ProductionGallery() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+
+  const total = PRODUCTION_GALLERY_IMAGES.length;
+
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prev) => (prev === 0 ? total - 1 : prev - 1));
+  }, [total]);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev === total - 1 ? 0 : prev + 1));
+  }, [total]);
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsLightboxOpen(false);
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'ArrowRight') handleNext();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen, handlePrev, handleNext]);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const diff = touchEndX.current - touchStartX.current;
+    if (diff > 50) handlePrev();
+    else if (diff < -50) handleNext();
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  const current = PRODUCTION_GALLERY_IMAGES[currentIndex];
+
+  return (
+    <figure className="max-w-2xl mx-auto mb-8">
+      {/* Khung ảnh vuông chính (tỷ lệ vuông 1:1) */}
+      <div
+        className="relative w-full aspect-square overflow-hidden rounded-2xl bg-gray-900 shadow-md group select-none cursor-pointer"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={() => setIsLightboxOpen(true)}
+      >
+        <Image
+          src={current.src}
+          alt={current.alt}
+          layout="fill"
+          objectFit="cover"
+          priority
+          sizes="(max-width: 768px) 100vw, 672px"
+          className="transition-transform duration-500 ease-out group-hover:scale-105"
+        />
+
+        {/* Lớp phủ gradient cho chú thích */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30 pointer-events-none" />
+
+        {/* Tag chỉ số & Nút mở rộng */}
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-auto">
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsLightboxOpen(true);
+            }}
+            className="p-2 rounded-full bg-black/60 hover:bg-[#105d97] text-white transition-colors backdrop-blur-md shadow"
+            title="Xem toàn màn hình"
+            aria-label="Xem toàn màn hình"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Nút lướt ảnh trái / phải */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handlePrev();
+          }}
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/55 hover:bg-[#105d97] text-white backdrop-blur-md flex items-center justify-center transition-all opacity-90 md:opacity-0 md:group-hover:opacity-100 shadow-md hover:scale-110 active:scale-95 z-10"
+          aria-label="Hình ảnh trước"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleNext();
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/55 hover:bg-[#105d97] text-white backdrop-blur-md flex items-center justify-center transition-all opacity-90 md:opacity-0 md:group-hover:opacity-100 shadow-md hover:scale-110 active:scale-95 z-10"
+          aria-label="Hình ảnh tiếp theo"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+
+      </div>
+
+      {/* Dãy 5 ảnh thu nhỏ vuông vức (aspect-square) */}
+      <div className="grid grid-cols-5 gap-2 sm:gap-3 mt-3">
+        {PRODUCTION_GALLERY_IMAGES.map((img, idx) => {
+          const isActive = idx === currentIndex;
+          return (
+            <button
+              key={img.src}
+              type="button"
+              onClick={() => setCurrentIndex(idx)}
+              className={`group relative aspect-square rounded-lg md:rounded-xl overflow-hidden border-2 transition-all duration-200 ${isActive
+                ? 'border-[#105d97] ring-2 ring-[#105d97]/40 shadow-md scale-[1.02]'
+                : 'border-transparent opacity-65 hover:opacity-100 hover:scale-[1.01]'
+                }`}
+              title={img.title}
+              aria-label={`Xem ảnh ${idx + 1}: ${img.title}`}
+            >
+              <Image
+                src={img.src}
+                alt={img.alt}
+                layout="fill"
+                objectFit="cover"
+                sizes="(max-width: 768px) 20vw, 130px"
+              />
+              <div
+                className={`absolute inset-0 transition-opacity ${isActive ? 'bg-[#105d97]/15' : 'bg-black/20 group-hover:bg-transparent'
+                  }`}
+              />
+              <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/70 text-white backdrop-blur-xs">
+                {idx + 1}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <figcaption className="text-center text-xs md:text-sm text-gray-500 pt-3 italic">
+        Hình ảnh khu vực sản xuất của Đồng Phục Univi
+      </figcaption>
+
+      {/* Lightbox xem ảnh toàn màn hình */}
+      {isLightboxOpen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/95 flex flex-col justify-between p-4 md:p-6 backdrop-blur-sm"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          {/* Header Lightbox */}
+          <div className="flex items-center justify-between text-white z-20">
+            <span className="text-sm md:text-base font-medium flex items-center gap-2">
+              <Images className="w-5 h-5 text-blue-400" />
+              {current.title} ({currentIndex + 1} / {total})
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsLightboxOpen(false)}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              aria-label="Đóng"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Vùng ảnh to */}
+          <div
+            className="relative flex-1 w-full max-w-2xl mx-auto my-3 flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative w-full aspect-square max-h-[75vh]">
+              <Image
+                src={current.src}
+                alt={current.alt}
+                layout="fill"
+                objectFit="contain"
+                sizes="100vw"
+                priority
+              />
+            </div>
+
+            {/* Nút lướt trong lightbox */}
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="absolute left-2 md:-left-12 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/20 hover:bg-[#105d97] text-white flex items-center justify-center transition-colors shadow-lg"
+              aria-label="Ảnh trước"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              className="absolute right-2 md:-right-12 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/20 hover:bg-[#105d97] text-white flex items-center justify-center transition-colors shadow-lg"
+              aria-label="Ảnh tiếp theo"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Footer Lightbox & Thumbnails vuông */}
+          <div className="max-w-3xl mx-auto w-full z-20" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-xs md:text-sm text-gray-300 mb-3 px-4">
+              {current.caption}
+            </p>
+            <div className="flex justify-center gap-2 md:gap-3 overflow-x-auto py-1">
+              {PRODUCTION_GALLERY_IMAGES.map((img, idx) => (
+                <button
+                  key={`modal-${img.src}`}
+                  type="button"
+                  onClick={() => setCurrentIndex(idx)}
+                  className={`relative w-12 h-12 md:w-16 md:h-16 aspect-square rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${idx === currentIndex
+                    ? 'border-[#105d97] ring-2 ring-[#105d97]/40 scale-105'
+                    : 'border-transparent opacity-50 hover:opacity-100'
+                    }`}
+                  aria-label={`Ảnh ${idx + 1}`}
+                >
+                  <Image src={img.src} alt={img.alt} layout="fill" objectFit="cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </figure>
+  );
+}
+
+// ─── Image Gallery Section (Theo chuẩn ProductDetailView.jsx) ──────────────────
+const getPhotoRatio = (photo) => {
+  const width = Number(photo?.width);
+  const height = Number(photo?.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return 4 / 3;
+  }
+  return width / height;
+};
+
+const buildGalleryRows = (photos, targetRatio = 5.2, maxPerRow = 4) => {
+  const rows = [];
+  let currentRow = [];
+  let currentRatio = 0;
+
+  photos.forEach((photo) => {
+    currentRow.push(photo);
+    currentRatio += getPhotoRatio(photo);
+
+    if (currentRatio >= targetRatio || currentRow.length >= maxPerRow) {
+      rows.push(currentRow);
+      currentRow = [];
+      currentRatio = 0;
+    }
+  });
+
+  if (currentRow.length > 0) {
+    const previousRow = rows[rows.length - 1];
+    while (
+      currentRow.length < 2 &&
+      previousRow &&
+      previousRow.length > 2 &&
+      previousRow.length <= maxPerRow
+    ) {
+      currentRow.unshift(previousRow.pop());
+    }
+    rows.push(currentRow);
+  }
+
+  return rows;
+};
+
+const SPORTS_GALLERY_PHOTOS = [
+  {
+    src: 'https://live.staticflickr.com/65535/55342992386_38da3bb78b_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Đồng phục thể thao Univi Sport',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55343143199_64d57f3ebe_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Đồng phục áo khoác gió',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55634403904_73904b2e7d_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Đồng phục pt gym Univi',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55633209432_278c286a43_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Đồng phục huấn luyện viên thể thao chuyên nghiệp',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55566192339_9ed7c23aa8_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Đồng phục Yoga & Pilates nữ chuyên biệt',
+  },
+  {
+    src: '/images/chay-bo.jpg',
+    width: 533,
+    height: 533,
+    alt: 'Đồng phục giải chạy bộ & điền kinh Univi',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55568023498_3485226446_b.jpg',
+    width: 800,
+    height: 533,
+    alt: 'Đồng phục giải chạy bộ & điền kinh Univi',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55572538516_488722629b_b.jpg',
+    width: 533,
+    height: 533,
+    alt: 'Đồng phục huấn luyện viên Pilates',
+  },
+];
+
+const ENTERPRISE_GALLERY_PHOTOS = [
+  {
+    src: 'https://live.staticflickr.com/65535/55475604538_5346df2b81_b.jpg',
+    width: 800,
+    height: 533,
+    alt: 'Đồng phục doanh nghiệp chuyên nghiệp Univi',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55474487702_05668aaa00_b.jpg',
+    width: 633,
+    height: 800,
+    alt: 'Áo polo, thun sự kiện và sơ mi công sở Univi',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55482399466_ff4e293f8e_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Đồng phục văn phòng & công sở cao cấp',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55483093612_38b25b365f_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Áo polo đồng phục doanh nghiệp phong cách hiện đại',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55480255298_94092545d1_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Bộ mockup thiết kế áo polo doanh nghiệp Univi',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55488815769_6b3d0f68c9_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Bộ mockup thiết kế áo polo doanh nghiệp Univi',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55475701521_16be272795_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Bộ mockup thiết kế áo polo doanh nghiệp Univi',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55487547543_4f48026232_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Bộ mockup thiết kế áo polo doanh nghiệp Univi',
+  },
+
+
+];
+
+const OTHER_GALLERY_PHOTOS = [
+  {
+    src: 'https://live.staticflickr.com/65535/55482648906_92d13f29a0_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Đồng phục sự kiện, team building & học đường Univi',
+  },
+  {
+    src: 'https://live.staticflickr.com/65535/55490616689_d11078b529_b.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Đồng phục sự kiện, team building & học đường Univi',
+  },
+  {
+    src: '/teambuilding/dong-phuc-teambuilding-doanh-nghiep-tap-the.jpg',
+    width: 800,
+    height: 533,
+    alt: 'Đồng phục sự kiện, team building & học đường Univi',
+  },
+  {
+    src: '/teambuilding/dong-phuc-teambuilding-co-tron.jpg',
+    width: 533,
+    height: 800,
+    alt: 'Đồng phục sự kiện, team building & học đường Univi',
+  },
+
+];
+
+function GalleryLightbox({ photos, currentIndex, onClose, onNext, onPrev }) {
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight') onNext();
+      if (e.key === 'ArrowLeft') onPrev();
+    };
+    document.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handler);
+      document.body.style.overflow = 'unset';
+    };
+  }, [onClose, onNext, onPrev]);
+
+  const photo = photos[currentIndex];
+  if (!photo) return null;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/90 z-[99999] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); onPrev(); }}
+        className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2.5 md:p-3 z-10 transition-colors"
+        aria-label="Ảnh trước"
+      >
+        <ChevronLeft className="w-6 h-6 text-white" />
+      </button>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); onNext(); }}
+        className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2.5 md:p-3 z-10 transition-colors"
+        aria-label="Ảnh sau"
+      >
+        <ChevronRight className="w-6 h-6 text-white" />
+      </button>
+
+      <div
+        className="relative inline-flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute -top-4 -right-2 md:-top-7 md:-right-10 bg-gray-600 hover:bg-red-700 text-white rounded-full p-2 md:p-2.5 z-10 transition-colors shadow-lg"
+          aria-label="Đóng"
+        >
+          <X className="w-5 h-5 text-white" />
+        </button>
+        <div className="relative w-[85vw] h-[85vh] md:w-[90vw] md:h-[90vh]">
+          <Image
+            src={typeof photo === 'string' ? photo : photo.src}
+            alt={`Ảnh ${currentIndex + 1}`}
+            fill
+            className="object-contain rounded-lg shadow-2xl"
+          />
+        </div>
+      </div>
+
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/80 text-sm">
+        {currentIndex + 1} / {photos.length}
+      </div>
+    </div>
+  );
+}
+
+function CategoryGallerySection({ title, photos }) {
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+
+  const galleryRows = useMemo(() => buildGalleryRows(photos, 5.2, 4), [photos]);
+
+  const openLightbox = useCallback((index) => setLightboxIndex(index), []);
+  const closeLightbox = useCallback(() => setLightboxIndex(null), []);
+  const nextImage = useCallback(() => {
+    setLightboxIndex((i) => (i + 1) % photos.length);
+  }, [photos.length]);
+  const prevImage = useCallback(() => {
+    setLightboxIndex((i) => (i - 1 + photos.length) % photos.length);
+  }, [photos.length]);
+
+  if (!photos || photos.length === 0) return null;
+
+  return (
+    <div className="mt-6 bg-white mx-auto">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-1 h-5 bg-[#105d97] rounded-full" />
+        <h4 className="text-base md:text-lg font-medium tracking-tight text-gray-900">
+          {title}
+        </h4>
+        <span className="ml-auto text-xs text-gray-400">{photos.length} ảnh</span>
+      </div>
+
+      <div className="gallery-container">
+        <style jsx>{`
+          .gallery-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+          }
+
+          .gallery-row {
+            display: grid;
+            grid-template-columns: var(--gallery-columns);
+            gap: 0.25rem;
+            align-items: start;
+          }
+
+          @media (min-width: 640px) {
+            .gallery-container {
+              gap: 0.5rem;
+            }
+
+            .gallery-row {
+              gap: 0.5rem;
+            }
+          }
+        `}</style>
+
+        {galleryRows.map((row, rowIndex) => {
+          let globalIndex = galleryRows
+            .slice(0, rowIndex)
+            .reduce((total, currentRow) => total + currentRow.length, 0);
+
+          return (
+            <div
+              key={`row-${rowIndex}`}
+              className="gallery-row"
+              style={{
+                '--gallery-columns': row
+                  .map((photo) => `${getPhotoRatio(photo)}fr`)
+                  .join(' '),
+              }}
+            >
+              {row.map((photo) => {
+                const photoIndex = globalIndex;
+                globalIndex += 1;
+
+                return (
+                  <button
+                    key={`${photo.src}-${photoIndex}`}
+                    type="button"
+                    className="gallery-item group block w-full overflow-hidden rounded-lg bg-gray-100 text-left shadow-sm transition-shadow hover:shadow-md"
+                    style={{ aspectRatio: `${photo.width} / ${photo.height}` }}
+                    onClick={() => openLightbox(photoIndex)}
+                    aria-label={`Xem ảnh ${photoIndex + 1} trong thư viện`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.src}
+                      alt={photo.alt}
+                      loading="lazy"
+                      decoding="async"
+                      className="block h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+
+      {lightboxIndex !== null && (
+        <GalleryLightbox
+          photos={photos.map((p) => p.src)}
+          currentIndex={lightboxIndex}
+          onClose={closeLightbox}
+          onNext={nextImage}
+          onPrev={prevImage}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function AboutUniviPage() {
   return (
@@ -165,21 +787,7 @@ export default function AboutUniviPage() {
       <section className="py-6 px-4 md:px-12 container mx-auto">
         <SectionHeader roman="IV." title="Năng lực sản xuất" />
 
-        <figure className="max-w-4xl mx-auto mb-8">
-          <div className="overflow-hidden rounded-xl shadow-sm">
-            <Image
-              src="/images/gioi-thieu/nang-luc-san-xuat.jpg"
-              alt="Khu vực sản xuất đồng phục của Đồng Phục Univi"
-              width={800} height={400}
-              layout="responsive"
-              sizes="(max-width: 800px) 100vw, 800px"
-              className="rounded-xl hover:scale-105 transition-transform duration-300"
-            />
-          </div>
-          <figcaption className="text-center text-sm text-gray-500 pt-4 italic">
-            Hình ảnh khu vực sản xuất của Đồng Phục Univi
-          </figcaption>
-        </figure>
+        <ProductionGallery />
 
         <div className="space-y-4">
           <div className="bg-gray-50 rounded-xl p-5">
@@ -210,54 +818,33 @@ export default function AboutUniviPage() {
       {/* V. Quy trình lên mẫu */}
       <section className="py-6 px-4 md:px-12 container mx-auto">
         <SectionHeader roman="V." title="Quy trình lên mẫu đồng phục" />
-
-        <div className="space-y-4">
-          <StepCard number="1" title="Lên ý tưởng thiết kế áo đồng phục">
-            <p className="text-gray-700 leading-6">
-              Khách hàng cung cấp yêu cầu ban đầu về phong cách, màu sắc, logo, và nội dung muốn in/thêu trên áo. Univi hỗ trợ tư vấn và đề xuất các ý tưởng thiết kế phù hợp với bộ môn thể thao hoặc văn hóa và hình ảnh doanh nghiệp khách hàng.
-            </p>
-          </StepCard>
-          <StepCard number="2" title="Giai đoạn thiết kế áo đồng phục">
-            <p className="text-gray-700 leading-6">
-              Bộ phận thiết kế tạo mẫu phác thảo (Mockup) dựa trên ý tưởng đã thống nhất. Khách hàng xem và duyệt mẫu thiết kế trước khi chuyển sang bước tiếp theo.
-            </p>
-          </StepCard>
-          <StepCard number="3" title="Lựa chọn nguyên phụ liệu">
-            <p className="text-gray-700 leading-6">
-              Univi cung cấp chất liệu vải, loại sợi và màu sắc để khách hàng lựa chọn. Tư vấn các loại vải phù hợp với nhu cầu sử dụng và cung cấp thông tin chất liệu theo từng mã vải.
-            </p>
-          </StepCard>
-          <StepCard number="4" title="Sản xuất">
-            <ul className="space-y-2">
-              <Bullet>Thời gian sản xuất tham khảo từ <strong className="text-[#105d97]">3–7 ngày làm việc</strong>, tùy đơn hàng.</Bullet>
-              <Bullet>Tiến độ cụ thể được xác nhận theo số lượng, mẫu thiết kế, chất liệu, kỹ thuật hoàn thiện, thời điểm duyệt mẫu và lịch sản xuất.</Bullet>
-            </ul>
-          </StepCard>
-          <StepCard number="5" title="Kiểm tra và đánh giá" accent>
-            <p className="text-gray-700 leading-6">
-              Univi kiểm tra chất lượng sản phẩm theo tiêu chuẩn form dáng, đường may, màu sắc và logo. Khách hàng nhận áo mẫu để kiểm tra và duyệt lần cuối trước khi sản xuất toàn bộ đơn hàng.
-            </p>
-          </StepCard>
-        </div>
+        <UniviOrderProcess />
       </section>
 
       {/* VI. Lĩnh vực hoạt động */}
       <section className="py-6 px-4 md:px-12 container mx-auto">
-        <SectionHeader roman="VI." title="Lĩnh vực hoạt động của đồng phục Univi" />
-
+        <SectionHeader roman="VI." title="Lĩnh vực hoạt động của Univi" />
+        <div className="space-y-4 mb-6">
+          <p className="text-gray-700 leading-6 text-base">
+            <strong className="text-[#105d97]">Đồng Phục Univi</strong> cung cấp giải pháp thiết kế, tư vấn và sản xuất đồng phục theo yêu cầu cho doanh nghiệp, tổ chức, phòng tập thể thao và các cộng đồng đội nhóm tại Việt Nam. Với định hướng phát triển chuyên sâu về chất liệu, kiểu dáng và công năng sử dụng, Univi không chỉ tạo ra những bộ đồng phục đồng nhất về hình ảnh mà còn chú trọng trải nghiệm, sự thoải mái và hiệu quả sử dụng trong từng môi trường hoạt động.
+          </p>
+          <p className="text-gray-700 leading-6 text-base">
+            Hiện nay, Univi tập trung phát triển ba nhóm lĩnh vực chính: <strong className="text-[#105d97]">Đồng phục thể thao, Đồng phục doanh nghiệp và Các dòng đồng phục chuyên biệt khác.</strong>
+          </p>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {[
             {
               n: '1', title: 'ĐỒNG PHỤC THỂ THAO', icon: Shirt,
-              items: ['Đồng phục HLV, PT dành cho các phòng tập', 'Đồng phục đội nhóm Yoga, Pilates, Aerobic,...', 'Đồng phục đội nhóm Pickleball, Tennis, Cầu lông, Bóng đá,...', 'Đồng phục giải chạy bộ', 'Đồng phục MMA, Boxing,...', 'Đồng phục bơi, cứu hộ,...'],
+              items: ['Đồng phục Gym & Fitness', 'Đồng phục Yoga & Pilates', 'Đồng phục Pickleball & Tennis', 'Đồng phục chạy bộ (Running)', 'Đồng phục cầu lông, bóng đá, thể thao đồng đội', 'Đồng phục MMA & Boxing', 'Đồng phục Golf & thể thao ngoài trời', 'Đồng phục huấn luyện viên'],
             },
             {
               n: '2', title: 'ĐỒNG PHỤC DOANH NGHIỆP', icon: Building2,
-              items: ['Đồng phục Áo thun, áo Polo, áo Sơ mi, Vest,...', 'Đồng phục công sở/ văn phòng', 'Đồng phục Team building,...', 'Đồng phục Sự kiện'],
+              items: ['Đồng phục áo polo doanh nghiệp', 'Đồng phục áo thun doanh nghiệp', 'Đồng phục sơ mi công sở', 'Đồng phục vest công sở', 'Đồng phục teambuilding', 'Đồng phục sự kiện và quảng bá', 'Đồng phục nhân viên theo ngành nghề'],
             },
             {
-              n: '3', title: 'ĐỒNG PHỤC KHÁC', icon: Users,
-              items: ['Đồng phục trường học', 'Đồng phục gia đình, du lịch,...', 'Đồng phục họp lớp', 'Đồng phục ngành nghề', 'Đồng phục bảo hộ lao động'],
+              n: '3', title: 'ĐỒNG PHỤC CHUYÊN BIỆT KHÁC', icon: Users,
+              items: ['Đồng phục học sinh', 'Đồng phục gia đình', 'Đồng phục du lịch', 'Đồng phục họp lớp', 'Đồng phục cộng đồng', 'Đồng phục bảo hộ lao động'],
             },
           ].map(({ n, title, icon: Icon, items }) => (
             <div key={n} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -266,9 +853,6 @@ export default function AboutUniviPage() {
                 <h4 className="font-medium text-gray-900 text-sm">{title}</h4>
               </div>
               <div className="p-5">
-                <div className="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Icon className="w-6 h-6 text-gray-500" />
-                </div>
                 <ul className="space-y-2 text-sm text-gray-700">
                   {items.map((item) => <Bullet key={item}>{item}</Bullet>)}
                 </ul>
@@ -278,58 +862,138 @@ export default function AboutUniviPage() {
         </div>
       </section>
 
-      {/* Sub-sections: 1. Thể thao, 2. Doanh nghiệp, 3. Khác */}
+      {/* Sub-sections: 1. Thể thao, 2. Doanh nghiệp, 3. Chuyên biệt khác */}
       {[
         {
-          n: '1', title: '1. Đồng phục thể thao',
-          body1: <p className="text-gray-700 leading-6 text-base">Univi hiện đang tập trung cung cấp giải pháp <strong className="text-[#105d97]">Đồng Phục Thể Thao</strong>, đặc biệt tập trung vào thị trường Việt Nam với đối tượng chủ yếu là người tập thể thao, đội nhóm tập thể thao.</p>,
-          body2: <p className="text-gray-700 leading-6 font-medium">Đồng phục Univi không ngừng cố gắng nghiên cứu để mang đến sản phẩm mang <strong className="text-[#105d97]">chất lượng Quốc tế</strong> nhưng giá lại <strong className="text-[#105d97]">phù hợp với người dùng Việt Nam</strong>.</p>,
-          img: { src: '/images/gioi-thieu/dong-phuc-the-thao.jpg', alt: 'Đồng phục thể thao chất lượng cao từ Univi', h: 600 },
-        },
-        {
-          n: '2', title: '2. Đồng phục doanh nghiệp',
-          body1: <p className="text-gray-700 leading-6 text-base">Với xuất phát điểm là đơn vị sản xuất <strong className="text-[#105d97]">Đồng phục doanh nghiệp</strong>, Univi hiểu rằng thị trường đồng phục cho hội nhóm, cơ quan, tổ chức, và doanh nghiệp, nhu cầu chuyên nghiệp hóa ngày càng được ưu tiên.</p>,
-          body2: <p className="text-gray-700 leading-6 font-medium">Univi, với phương châm luôn phát triển và đổi mới, hướng đến việc mở rộng thị phần <Link href="/dong-phuc-doanh-nghiep" legacyBehavior><a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">đồng phục doanh nghiệp</a></Link>. Công ty cung cấp đa dạng sản phẩm từ <strong className="text-[#105d97]">trung cấp đến cận cao cấp</strong>.</p>,
-          imgs: [
-            { src: '/images/gioi-thieu/dong-phuc-doanh-nghiep.jpg', alt: 'Đồng phục doanh nghiệp chuyên nghiệp từ Univi' },
-            { src: '/images/gioi-thieu/dong-phuc-doanh-nghiep-2.jpg', alt: 'Các loại đồng phục khác từ Univi' },
+          n: '1',
+          title: '1. Đồng phục thể thao - Lĩnh vực phát triển trọng tâm',
+          intro: [
+            <>Đồng Phục Univi tiên phong cung cấp giải pháp <strong className="text-[#105d97]">đồng phục thể thao chuyên nghiệp</strong> cho các chuỗi phòng tập và các đội nhóm tập Gym, Fitness, Pickleball, Yoga, Running, Pilates, MMA... tại Việt Nam.
+              Đây là lĩnh vực được Univi ưu tiên đầu tư nghiên cứu và phát triển, với định hướng tạo ra những sản phẩm không chỉ đẹp về thiết kế mà còn đáp ứng yêu cầu vận động đặc thù của từng bộ môn thể thao.</>,
+            <>Univi chú trọng lựa chọn chất liệu có độ co giãn, khả năng thoát ẩm, nhanh khô và độ bền phù hợp với cường độ sử dụng. Kiểu dáng, màu sắc và kỹ thuật hoàn thiện cũng được tư vấn dựa trên đặc điểm vận động, hình ảnh thương hiệu và nhu cầu thực tế của từng khách hàng.</>,
           ],
+          productsTitle: 'Các dòng đồng phục thể thao Univi cung cấp:',
+          products: [
+            ['Đồng phục Gym & Fitness', 'Áo tập, quần tập, áo ba lỗ, áo croptop và trang phục dành cho hội viên phòng tập, huấn luyện viên cá nhân (PT), huấn luyện viên thể hình và đội ngũ nhân sự Fitness Center.'],
+            ['Đồng phục Yoga & Pilates', 'Trang phục tập Yoga, Pilates dành cho nam và nữ; áo tập, quần legging, áo bra và các thiết kế chuyên biệt đáp ứng yêu cầu co giãn, ôm vừa cơ thể, che phủ phù hợp và không gây vướng víu khi thực hiện động tác.'],
+            ['Đồng phục Pickleball & Tennis', 'Áo polo, áo thi đấu, chân váy, quần thể thao và trang phục đội nhóm dành cho câu lạc bộ, học viện, trung tâm đào tạo và các giải đấu.'],
+            ['Đồng phục chạy bộ (Running)', 'Áo chạy bộ, áo giải chạy, trang phục đội tuyển và đồng phục sự kiện thể thao, chú trọng trọng lượng nhẹ, khả năng thoát mồ hôi và sự linh hoạt khi vận động.'],
+            ['Đồng phục cầu lông, bóng đá và thể thao đồng đội', 'Trang phục thi đấu, tập luyện dành cho câu lạc bộ, đội nhóm phong trào và các tổ chức thể thao.'],
+            ['Đồng phục MMA & Boxing', 'Trang phục tập luyện và thi đấu theo đặc thù bộ môn, ưu tiên độ bền, sự linh hoạt và khả năng chịu ma sát.'],
+            ['Đồng phục Golf & thể thao ngoài trời', 'Áo polo, áo thể thao và trang phục dành cho câu lạc bộ, đội nhóm và sự kiện thể thao.'],
+            ['Đồng phục huấn luyện viên', 'Trang phục chuyên nghiệp dành cho PT, HLV Gym, Yoga, Pilates, Fitness và các bộ môn thể thao khác.'],
+          ],
+          customers: [
+            'Chuỗi phòng tập Gym, Fitness Center, Yoga Studio và Pilates Studio.',
+            'Câu lạc bộ Pickleball, Tennis, cầu lông và các cộng đồng thể thao.',
+            'Trung tâm đào tạo, học viện và đội ngũ huấn luyện viên.',
+            'Doanh nghiệp tổ chức giải thể thao, sự kiện vận động và hoạt động nội bộ.',
+            'Các đội nhóm, cộng đồng yêu thể thao và cá nhân kinh doanh trong lĩnh vực thể thao.',
+          ],
+          closing: <>Với mỗi đối tác, Univi hướng đến giải pháp đồng phục có <strong className="text-[#105d97]">tính đồng bộ về nhận diện thương hiệu</strong>, phù hợp với đặc thù vận động và có khả năng triển khai theo quy mô từ đội nhóm đến hệ thống nhiều cơ sở.</>,
+          galleryTitle: 'Thư viện ảnh Đồng phục Thể Thao',
+          photos: SPORTS_GALLERY_PHOTOS,
         },
         {
-          n: '3', title: '3. Đồng phục khác',
-          body1: <p className="text-gray-700 leading-6 text-base">Đồng phục khác của <strong className="text-[#105d97]">UNIVI</strong> bao gồm các sản phẩm đa dạng như đồng phục sự kiện, đồng phục teambuilding, áo lớp, áo nhóm và các loại trang phục đặc thù theo yêu cầu. Với sự linh hoạt trong thiết kế và chất liệu cao cấp như <strong className="text-[#105d97]">Cotton, Polyester, hay Piquecool</strong>.</p>,
-          body2: <p className="text-gray-700 leading-6 font-medium">Tất cả sản phẩm đều được sản xuất theo <strong className="text-[#105d97]">quy trình khép kín</strong>, đảm bảo chất lượng đồng nhất và an toàn cho người mặc.</p>,
-          img: { src: '/images/gioi-thieu/dong-phuc-khac.jpg', alt: 'Các loại đồng phục khác từ Univi', h: 400 },
+          n: '2',
+          title: '2. Đồng phục doanh nghiệp - Giải pháp nhận diện thương hiệu',
+          intro: [
+            <><Link href="/dong-phuc-doanh-nghiep" legacyBehavior><a className="text-blue-600 hover:underline">Đồng phục doanh nghiệp</a></Link> là một trong những lĩnh vực hoạt động của Univi, hướng đến nhu cầu xây dựng hình ảnh chuyên nghiệp, thống nhất và có bản sắc riêng cho các tổ chức, công ty và đội ngũ nhân sự.</>,
+            <>Univi hiểu rằng đồng phục không đơn thuần là trang phục làm việc mà còn là <strong className="text-[#105d97]">một phần trong hệ thống nhận diện thương hiệu</strong>, thể hiện văn hóa doanh nghiệp và tạo sự gắn kết giữa các thành viên.</>,
+            <>Từ khâu tư vấn kiểu dáng, lựa chọn chất liệu, phối màu đến thiết kế logo và hoàn thiện sản phẩm, Univi hướng đến giải pháp đồng phục phù hợp với đặc điểm ngành nghề, môi trường làm việc và ngân sách của từng doanh nghiệp.</>,
+          ],
+          productsTitle: 'Các dòng đồng phục doanh nghiệp Univi cung cấp:',
+          products: [
+            ['Đồng phục áo polo doanh nghiệp', 'Thiết kế thanh lịch, năng động, phù hợp với nhân viên văn phòng, đội ngũ kinh doanh, quản lý và các hoạt động giao tiếp khách hàng.'],
+            ['Đồng phục áo thun doanh nghiệp', 'Áo thun cổ tròn, cổ tim và các thiết kế theo yêu cầu, phù hợp với môi trường làm việc năng động, hoạt động nội bộ và truyền thông thương hiệu.'],
+            ['Đồng phục sơ mi công sở', 'Trang phục dành cho nhân viên văn phòng, bộ phận kinh doanh, lễ tân và đội ngũ quản lý.'],
+            ['Đồng phục vest công sở', 'Giải pháp trang phục lịch sự, chuyên nghiệp dành cho cấp quản lý, nhân sự văn phòng và các vị trí thường xuyên tiếp xúc đối tác.'],
+            ['Đồng phục teambuilding', 'Áo nhóm, áo sự kiện, áo du lịch và trang phục dành cho các chương trình gắn kết nội bộ.'],
+            ['Đồng phục sự kiện và quảng bá', 'Trang phục dành cho hội nghị, triển lãm, chương trình ra mắt sản phẩm, hoạt động tiếp thị và sự kiện thương hiệu.'],
+            ['Đồng phục nhân viên theo ngành nghề', 'Thiết kế theo yêu cầu sử dụng và đặc điểm nhận diện của từng doanh nghiệp.'],
+          ],
+          customers: [
+            'Doanh nghiệp vừa và nhỏ, tập đoàn và hệ thống chuỗi.',
+            'Công ty thương mại, dịch vụ, sản xuất và công nghệ.',
+            'Ngân hàng, tổ chức tài chính và đơn vị kinh doanh.',
+            'Khách sạn, nhà hàng, khu nghỉ dưỡng và dịch vụ du lịch.',
+            'Đơn vị tổ chức sự kiện, truyền thông và quảng cáo.',
+          ],
+          closing: <>Univi hướng đến việc giúp doanh nghiệp <strong className="text-[#105d97]">xây dựng hình ảnh đồng bộ</strong> thông qua những bộ đồng phục được thiết kế riêng, thể hiện màu sắc thương hiệu và phù hợp với từng vị trí công việc.</>,
+          galleryTitle: 'Thư viện ảnh Đồng phục Doanh Nghiệp',
+          photos: ENTERPRISE_GALLERY_PHOTOS,
         },
-      ].map(({ n, title, body1, body2, img, imgs }) => (
+        {
+          n: '3',
+          title: '3. Các dòng đồng phục chuyên biệt khác',
+          intro: [
+            <>Bên cạnh hai lĩnh vực trọng tâm, Univi còn phát triển các dòng đồng phục theo yêu cầu dành cho trường học, gia đình, tổ chức cộng đồng và những môi trường hoạt động đặc thù.</>,
+            <>Mỗi nhóm sản phẩm có yêu cầu riêng về thiết kế, chất liệu, độ bền và tính tiện dụng. Univi tư vấn giải pháp dựa trên mục đích sử dụng, độ tuổi người mặc, môi trường hoạt động và ngân sách triển khai.</>,
+          ],
+          productsTitle: 'Các dòng sản phẩm tiêu biểu:',
+          products: [
+            ['Đồng phục học sinh', 'Áo polo, áo thun, áo sơ mi và trang phục dành cho học sinh, trường học, trung tâm đào tạo.'],
+            ['Đồng phục gia đình', 'Trang phục đồng bộ dành cho các thành viên trong gia đình, sử dụng trong du lịch, nghỉ dưỡng và các dịp kỷ niệm.'],
+            ['Đồng phục du lịch', 'Áo nhóm, áo đoàn và trang phục dành cho các chuyến du lịch, hoạt động tập thể.'],
+            ['Đồng phục họp lớp', 'Trang phục thiết kế riêng cho các chương trình gặp mặt, kỷ niệm ngày ra trường và hoạt động hội khóa.'],
+            ['Đồng phục cộng đồng', 'Áo nhóm, áo thiện nguyện và trang phục dành cho các chương trình xã hội, hoạt động vì cộng đồng.'],
+            ['Đồng phục bảo hộ lao động', 'Trang phục phục vụ môi trường làm việc đặc thù, được tư vấn theo yêu cầu về chất liệu, kiểu dáng và tính năng sử dụng.'],
+          ],
+          customers: null,
+          closing: <>Univi chú trọng <strong className="text-[#105d97]">tính linh hoạt trong thiết kế và khả năng cá nhân hóa</strong>, giúp mỗi tổ chức có được sản phẩm đồng phục phù hợp với mục đích sử dụng và đặc trưng riêng.</>,
+          galleryTitle: 'Thư viện ảnh Đồng phục Khác & Sự Kiện',
+          photos: OTHER_GALLERY_PHOTOS,
+        },
+      ].map(({ n, title, intro, productsTitle, products, customers, closing, galleryTitle, photos }) => (
         <section key={n} className="py-6 px-4 md:px-12 container mx-auto">
           <h3 className="text-xl font-medium text-gray-900 mb-6">{title}</h3>
-          <div className="space-y-4 mb-6">
-            <div className="bg-gray-50 rounded-xl p-5">{body1}</div>
-            <div className="bg-blue-50 rounded-xl p-5 border-l-4 border-[#105d97]">{body2}</div>
-          </div>
-          {img && (
-            <figure className="max-w-4xl mx-auto">
-              <div className="overflow-hidden rounded-xl shadow-sm">
-                <Image src={img.src} alt={img.alt} width={800} height={img.h}
-                  layout="responsive" sizes="(max-width: 800px) 100vw, 800px"
-                  className="rounded-xl hover:scale-105 transition-transform duration-300" />
+          <div className="space-y-4">
+            <div className="bg-gray-50 rounded-xl p-5 space-y-4">
+              {intro.map((para, i) => <p key={i} className="text-gray-700 leading-6 text-base">{para}</p>)}
+              <div>
+                <p className="font-medium text-gray-900 mb-2">{productsTitle}</p>
+                <ul className="space-y-2 text-base">
+                  {products.map(([label, desc]) => (
+                    <Bullet key={label}><span><strong className="text-[#105d97]">{label}:</strong> {desc}</span></Bullet>
+                  ))}
+                </ul>
               </div>
-            </figure>
-          )}
-          {imgs && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {imgs.map((im) => (
-                <div key={im.src} className="overflow-hidden rounded-xl shadow-sm">
-                  <Image src={im.src} alt={im.alt} width={800} height={600}
-                    layout="responsive" sizes="(max-width: 768px) 100vw, 50vw"
-                    className="rounded-xl hover:scale-105 transition-transform duration-300" />
+              {customers && (
+                <div>
+                  <p className="font-medium text-gray-900 mb-2">Đối tượng khách hàng:</p>
+                  <ul className="space-y-2 text-base">
+                    {customers.map((c) => <Bullet key={c}>{c}</Bullet>)}
+                  </ul>
                 </div>
-              ))}
+              )}
             </div>
-          )}
+            <div className="bg-blue-50 rounded-xl p-5 border-l-4 border-[#105d97]">
+              <p className="text-gray-700 leading-6 font-medium">{closing}</p>
+            </div>
+          </div>
+          <CategoryGallerySection title={galleryTitle} photos={photos} />
         </section>
       ))}
+
+      {/* Giải pháp đồng phục theo yêu cầu */}
+      <section className="py-6 px-4 md:px-12 container mx-auto">
+        <h3 className="text-xl font-medium text-gray-900 mb-6">Giải pháp đồng phục theo yêu cầu từ Univi</h3>
+        <div className="space-y-4">
+          <div className="bg-gray-50 rounded-xl p-5 space-y-4">
+            <p className="text-gray-700 leading-6 text-base">
+              Dù thuộc lĩnh vực thể thao, doanh nghiệp hay các dòng đồng phục chuyên biệt, Univi đều hướng đến việc cung cấp <strong className="text-[#105d97]">giải pháp xuyên suốt</strong> từ tư vấn, thiết kế, lựa chọn nguyên phụ liệu, phát triển mẫu đến sản xuất và kiểm soát chất lượng.
+            </p>
+            <p className="text-gray-700 leading-6 text-base">
+              Mỗi đơn hàng được tiếp cận dựa trên nhu cầu thực tế, số lượng, ngân sách, đặc điểm sử dụng và định hướng nhận diện thương hiệu của khách hàng.
+            </p>
+          </div>
+          <div className="bg-blue-50 rounded-xl p-5 border-l-4 border-[#105d97]">
+            <p className="text-gray-700 leading-6 font-medium">
+              <strong className="text-[#105d97]">Đồng Phục Univi - TIÊN PHONG cung cấp giải pháp đồng phục thể thao chuyên nghiệp</strong>, đồng hành cùng doanh nghiệp, tổ chức và cộng đồng trong hành trình xây dựng hình ảnh thương hiệu thông qua đồng phục.
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* VII. Cam kết */}
       <section className="py-6 px-4 md:px-12 container mx-auto">
@@ -351,14 +1015,6 @@ export default function AboutUniviPage() {
           </StepCard>
         </div>
 
-        <figure className="max-w-4xl mx-auto my-6">
-          <div className="overflow-hidden rounded-xl shadow-sm">
-            <Image src="/images/gioi-thieu/chat-luong-san-pham.jpg" alt="Chất lượng sản phẩm đồng phục từ Univi"
-              width={800} height={600} layout="responsive" sizes="(max-width: 800px) 100vw, 800px"
-              className="rounded-xl hover:scale-105 transition-transform duration-300" />
-          </div>
-        </figure>
-
         <div className="space-y-4">
           <StepCard number="3" title="An toàn với sức khỏe người mặc">
             <p className="text-gray-700 leading-6">Chất liệu được lựa chọn theo nhu cầu vận động và tư vấn theo từng mã vải.</p>
@@ -375,14 +1031,6 @@ export default function AboutUniviPage() {
               Univi bảo hành chất lượng áo, logo,…, đội ngũ chăm sóc khách hàng chuyên nghiệp sẵn sàng hỗ trợ mọi vấn đề và giải đáp mọi thắc mắc của quý khách hàng.
             </p>
           </StepCard>
-
-          <figure className="max-w-4xl mx-auto">
-            <div className="overflow-hidden rounded-xl shadow-sm">
-              <Image src="/images/gioi-thieu/che-do-hau-mai.jpg" alt="Chế độ bảo hành và hậu mãi từ Univi"
-                width={800} height={400} layout="responsive" sizes="(max-width: 800px) 100vw, 800px"
-                className="rounded-xl hover:scale-105 transition-transform duration-300" />
-            </div>
-          </figure>
         </div>
       </section>
 
@@ -401,11 +1049,11 @@ export default function AboutUniviPage() {
           </div>
         </div>
 
-        <figure className="max-w-4xl mx-auto">
+        <figure className="max-w-5xl mx-auto">
           <div className="overflow-hidden rounded-xl shadow-sm">
             <Image src="/images/gioi-thieu/univi-vi-cong-dong.jpg" alt="Quỹ UNIVI vì cộng đồng"
               width={800} height={400} layout="responsive" sizes="(max-width: 800px) 100vw, 800px"
-              className="rounded-xl hover:scale-105 transition-transform duration-300" />
+              className="rounded-xl" />
           </div>
         </figure>
       </section>

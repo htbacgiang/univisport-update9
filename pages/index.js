@@ -18,9 +18,9 @@ import { useInView } from "../hooks/useInView";
 import db from "../utils/db";
 import Product from "../models/Product";
 import Feedback from "../models/Feedback";
+import HomepageVideoFeedbackSettings from "../models/HomepageVideoFeedbackSettings";
 import HomepageSection from "../models/HomepageSection";
-import HomepageFaqSettings from "../models/HomepageFaqSettings";
-import { DEFAULT_HOMEPAGE_FAQS } from "../data/homepageFaqs";
+import { DEFAULT_HOMEPAGE_FAQS, DEFAULT_CLOUDINARY_VIDEO } from "../data/homepageFaqs";
 import { normalizeCategoryHref } from "../lib/siteCategories";
 import { setPublicCacheHeaders } from "../lib/cacheControl";
 
@@ -86,6 +86,7 @@ export default function Home({
   sections = [],
   homepageFaqs = [],
   initialFeedbacks = [],
+  initialVideoFeedbacks = [],
   meta = DEFAULT_META,
 }) {
   return (
@@ -122,7 +123,7 @@ export default function Home({
       <div className="container mx-auto px-2 sm:px-4 mb-6 sm:mb-10 mt-3">
         <FabricCatalogView />
       </div>
-      <VideoFeedback />
+      <VideoFeedback initialItems={initialVideoFeedbacks} />
       <FAQComponent items={homepageFaqs} />
       <BlogHero />
       <div className="container mx-auto px-4 py-4 md:py-10">
@@ -749,21 +750,18 @@ export async function getServerSideProps({ res } = {}) {
       };
     });
 
-    const faqSettings = await HomepageFaqSettings.findOne({
-      key: "homepage",
-    }).lean();
-    const faqSource = faqSettings
-      ? faqSettings.faqs
-      : DEFAULT_HOMEPAGE_FAQS;
-    const homepageFaqs = [...faqSource]
+    // FAQ trang chủ lấy trực tiếp từ data/homepageFaqs.js để luôn khớp nội dung mới nhất
+    const homepageFaqs = DEFAULT_HOMEPAGE_FAQS
       .filter((faq) => faq.isVisible !== false)
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map((faq, index) => ({
         _id: faq._id ? String(faq._id) : `default-${index}`,
         question: faq.question,
         answer: faq.answer,
         image: faq.image || "/images/thumb-univi.jpg",
-        video: faq.video || "",
+        video:
+          typeof faq.video === "string" && faq.video.trim() !== ""
+            ? faq.video.trim()
+            : DEFAULT_CLOUDINARY_VIDEO,
       }));
 
     // Fetch 15 feedback mới nhất cho SSR — Google thấy nội dung thật
@@ -779,12 +777,35 @@ export async function getServerSideProps({ res } = {}) {
       // ignore — FeedbackSection sẽ tự fetch client-side nếu không có SSR data
     }
 
+    // Video feedback cho SSR — chỉ lấy từ DB (không dùng dữ liệu tĩnh).
+    // Poster base64 bị lược bỏ để HTML không phình to; client fetch /api/video-feedback sẽ bổ sung.
+    let initialVideoFeedbacks = [];
+    try {
+      const videoSettings = await HomepageVideoFeedbackSettings.findOne({ key: "homepage" }).lean();
+      initialVideoFeedbacks = [...(videoSettings?.videos || [])]
+        .filter((v) => v && v.isVisible !== false)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((v, index) => ({
+          id: v._id ? String(v._id) : `video-${index}`,
+          type: v.type === "facebook" ? "facebook" : "local",
+          title: v.title || "",
+          src: v.src || "",
+          fbUrl: v.fbUrl || "",
+          poster:
+            typeof v.poster === "string" && !v.poster.startsWith("data:") ? v.poster : "",
+          isVisible: true,
+        }));
+    } catch {
+      // ignore — VideoFeedback sẽ tự fetch client-side
+    }
+
     return {
       props: {
         posts: homepagePosts,
         sections,
         homepageFaqs,
         initialFeedbacks,
+        initialVideoFeedbacks,
         meta: DEFAULT_META,
       },
     };

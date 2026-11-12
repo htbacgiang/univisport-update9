@@ -70,7 +70,6 @@ const PartnersSection = ({ initialLogos, category }) => {
             return (
               <div
                 key={partner._id || partner.id}
-                className="transition-all duration-300 transform hover:scale-105"
               >
                 {partner.link ? (
                   <a

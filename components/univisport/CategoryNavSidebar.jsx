@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
+import FilterNavButton from '../common/FilterNavButton';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { SIDEBAR_CATEGORIES } from '../../lib/siteCategories';
 import { ENTERPRISE_FLAT_SLUGS } from '../../lib/enterpriseFlatSlugs';
@@ -141,7 +142,7 @@ export default function CategoryNavSidebar({
                               ) : (
                                 <span className="w-[18px] shrink-0" aria-hidden="true" />
                               )}
-                              <Link
+                              <FilterNavButton
                                 href={{ pathname: `/${GYM_SLUG}`, query: { line: line.slug } }}
                                 shallow
                                 onClick={onNavigate}
@@ -153,7 +154,7 @@ export default function CategoryNavSidebar({
                               >
                                 <span>{line.label}</span>
                                 <span className="text-gray-400">({line.count})</span>
-                              </Link>
+                              </FilterNavButton>
                             </div>
 
                             {hasCollars && isLineOpen && (
@@ -162,19 +163,19 @@ export default function CategoryNavSidebar({
                                   const isCollarActive = isLineActive && collar.slug === activeCollarType;
                                   return (
                                     <li key={collar.slug}>
-                                      <Link
+                                      <FilterNavButton
                                         href={{ pathname: `/${GYM_SLUG}`, query: { line: line.slug, collar: collar.slug } }}
                                         shallow
                                         onClick={onNavigate}
                                         aria-current={isCollarActive ? 'page' : undefined}
-                                        className={`flex items-center justify-between py-1.5 px-2 rounded text-xs transition-colors ${isCollarActive
+                                        className={`w-full flex items-center justify-between py-1.5 px-2 rounded text-xs transition-colors ${isCollarActive
                                           ? 'text-[#105d97] font-semibold bg-[#105d97]/10'
                                           : 'text-gray-500 hover:text-[#105d97] hover:bg-gray-50'
                                           }`}
                                       >
                                         <span>{collar.label}</span>
                                         <span className="text-gray-400">({collar.count})</span>
-                                      </Link>
+                                      </FilterNavButton>
                                     </li>
                                   );
                                 })}

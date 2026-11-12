@@ -83,8 +83,8 @@ export default function AboutUs({ meta }) {
             <div className="w-16 h-1 mx-auto mt-2 rounded-full bg-[#105d97]" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-2">
+          <div className="space-y-6">
+            <div className="space-y-3">
               {/* Đoạn mở đầu định danh thực thể (entity definition) cho AI Search.
                   Chỉ dùng dữ kiện [FACT] trong docs/knowledge (01, 02, 03, 04, 05) — duyệt 09/11/2026. */}
               <p className="text-gray-700 leading-6 text-base">
@@ -93,8 +93,11 @@ export default function AboutUs({ meta }) {
                 đồng sáng lập, Univi khởi đầu với đồng phục doanh nghiệp và từ năm 2023 tập trung vào đồng phục thể thao chuyên sâu. Univi dùng các dòng vải UNI SUPER COOL, UNI QUICK DRY cùng công nghệ thoát ẩm một chiều UNI DRY; vải được kiểm định an toàn với da trước khi đưa vào sản xuất.
               </p>
               <p className="text-gray-700 leading-6 text-base">
-                Univi sản xuất trực tiếp tại xưởng khoảng <span className="font-semibold text-[#105d97]">2.000 m²</span> ở Chương Mỹ, Hà Nội, công suất khoảng <span className="font-semibold text-[#105d97]">100.000 sản phẩm/tháng</span>. Quy trình khép kín gồm thiết kế mockup, triển khai rập và may mẫu, cắt, may, in/thêu và kiểm soát chất lượng (QC) từ bán thành phẩm đến thành phẩm. Khách hàng của Univi gồm các chuỗi phòng tập, CLB như KickFit Sport, Welly Fitness, ZENFIT, FitCaree và các doanh nghiệp như Sun Group, Vingroup, Thành Công Group, Tập đoàn Công nghiệp Than – Khoáng sản Việt Nam.
+                Univi sản xuất trực tiếp tại xưởng khoảng <span className="font-semibold text-[#105d97]">2.000 m²</span> ở Chương Mỹ, Hà Nội, công suất khoảng <span className="font-semibold text-[#105d97]">100.000 sản phẩm/tháng</span>. Quy trình khép kín gồm thiết kế mockup, triển khai rập và may mẫu, cắt, may, in/thêu và kiểm soát chất lượng (QC) từ bán thành phẩm đến thành phẩm. Khách hàng của Univi gồm các chuỗi phòng tập, CLB như KickFit Sport, Welly Fitness, ZENFIT, FitCaree và các doanh nghiệp như Sun Group, Vingroup, Thành Công Group, Tập đoàn Công nghiệp Than - Khoáng sản Việt Nam.
               </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-start gap-3">
@@ -137,7 +140,7 @@ export default function AboutUs({ meta }) {
               </div>
 
               {/* Chi tiết năng lực & quy mô */}
-              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 space-y-4 mt-4">
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 space-y-4">
                 <h3 className="font-medium text-lg md:text-xl text-gray-900 border-b border-gray-200 pb-2">
                   Năng lực & Quy mô sản xuất
                 </h3>
@@ -171,13 +174,14 @@ export default function AboutUs({ meta }) {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl shadow-lg group">
+            {/* Ảnh xưởng sản xuất full-width container */}
+            <div className="overflow-hidden rounded-xl shadow-lg w-full">
               <Image
                 src="/images/gioi-thieu/xuong-san-xuat.jpg"
                 alt="Khu vực sản xuất đồng phục thể thao của Đồng Phục Univi"
-                width={800}
-                height={600}
-                className="object-cover w-full transition-transform duration-700 group-hover:scale-105"
+                width={1200}
+                height={675}
+                className="object-cover w-full h-auto max-h-[500px] md:max-h-[600px]"
                 loading="lazy"
               />
             </div>
@@ -333,7 +337,7 @@ export async function getServerSideProps({ res } = {}) {
       "@context": "https://schema.org",
       "@type": "AboutPage",
       "@id": "https://dongphucunivi.com/gioi-thieu#webpage",
-      "name": "Giới Thiệu Đồng Phục Univi — Xưởng May Đồng Phục Thể Thao Chuyên Dụng",
+      "name": "Giới Thiệu Đồng Phục Univi - Xưởng May Đồng Phục Thể Thao Chuyên Dụng",
       "description": "Đồng Phục Univi thành lập năm 2017, cung cấp giải pháp đồng phục thể thao chuyên nghiệp cho chuỗi phòng tập, câu lạc bộ và đội nhóm tại Việt Nam. Nhà máy đặt tại Chương Mỹ, Hà Nội.",
       "url": "https://dongphucunivi.com/gioi-thieu",
       "inLanguage": "vi-VN",
@@ -358,14 +362,14 @@ export async function getServerSideProps({ res } = {}) {
   ];
 
   const meta = {
-    title: "Giới Thiệu Đồng Phục Univi – Đồng Phục Thể Thao B2B Từ 2017",
+    title: "Giới thiệu Đồng phục Univi - Giải pháp đồng phục thể thao B2B",
     description: "Đồng Phục Univi thành lập năm 2017, cung cấp giải pháp đồng phục thể thao B2B cho chuỗi phòng tập và đội nhóm Gym, Yoga, Pilates, Pickleball. Nhà máy tại Chương Mỹ, Hà Nội.",
     keywords: "giới thiệu Đồng Phục Univi, Đồng Phục Univi thành lập 2017, đồng phục thể thao B2B, đồng phục Gym Yoga Pilates Pickleball, công nghệ UNI DRY",
     robots: "index, follow",
     author: "Đồng Phục Univi",
     canonical: "https://dongphucunivi.com/gioi-thieu",
     og: {
-      title: "Giới Thiệu Đồng Phục Univi – Thành Lập Năm 2017",
+      title: "Giới thiệu Đồng phục Univi - Giải pháp đồng phục thể thao B2B",
       description: "Giải pháp đồng phục thể thao B2B cho chuỗi phòng tập và đội nhóm. Thành lập năm 2017, nhà máy tại Chương Mỹ, Hà Nội.",
       type: "website",
       image: "https://dongphucunivi.com/images/gioi-thieu/xuong-san-xuat.jpg",
@@ -377,7 +381,7 @@ export async function getServerSideProps({ res } = {}) {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Giới Thiệu Đồng Phục Univi – Thành Lập Năm 2017",
+      title: "Giới thiệu Đồng phục Univi - Giải pháp đồng phục thể thao B2B",
       description: "Giải pháp đồng phục thể thao B2B cho chuỗi phòng tập và đội nhóm. Thành lập năm 2017, nhà máy tại Chương Mỹ, Hà Nội.",
       image: "https://dongphucunivi.com/images/gioi-thieu/xuong-san-xuat.jpg",
     },

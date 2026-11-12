@@ -6,6 +6,7 @@ import { postPath } from "../../lib/slugFixes";
 import Image from "next/image";
 import { FaArrowRight, FaCalendarAlt, FaRegCalendarAlt, FaRegComments, FaStar } from "react-icons/fa";
 import DefaultLayout2 from "../../components/layout/DefaultLayout2";
+import LinkPagination from "../../components/common/LinkPagination";
 import { readAllPostsFromDb, formatPosts } from "../../lib/utils";
 import { setPublicCacheHeaders } from "../../lib/cacheControl";
 import { PostDetail } from "../../utils/types";
@@ -37,7 +38,14 @@ type MetaData = {
 
 interface Props {
   initialPosts: PostDetail[];
+  /** Trang hiện tại của danh sách "Tất cả bài viết" — đọc từ ?page=N ở server. */
+  currentPage: number;
 }
+
+// Số bài mỗi trang của danh sách "Tất cả bài viết" (?page=N, SSR + <a href>).
+const POSTS_PER_PAGE = 12;
+const BLOG_PATH = "/bai-viet";
+const blogPageHref = (page: number) => (page <= 1 ? BLOG_PATH : `${BLOG_PATH}?page=${page}`);
 
 const meta: MetaData = {
   title: "Bài viết - Đồng phục Univi",
@@ -76,14 +84,61 @@ const DEFAULT_CATEGORIES = [
   "Phản hồi khách hàng",
 ];
 
-const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
+const PostCard = ({ post, formatDate }: { post: PostDetail; formatDate: (d: string) => string }) => (
+  <article className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 flex flex-col justify-between">
+    <div>
+      <div className="relative aspect-video overflow-hidden rounded-t-xl">
+        {post.thumbnail ? (
+          <Image
+            src={post.thumbnail}
+            alt={post.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-sky-100 flex items-center justify-center">
+            <span className="text-[#105d97] text-3xl">📄</span>
+          </div>
+        )}
+      </div>
+      <div className="p-4">
+        <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-snug group-hover:text-[#105d97] transition-colors line-clamp-2 mb-2">
+          <Link href={postPath(post)}>{post.title}</Link>
+        </h3>
+      </div>
+    </div>
+    <div className="p-4 pt-0 flex items-center justify-between text-xs text-gray-500 border-t border-gray-50 mt-1">
+      <div className="flex items-center gap-1">
+        <FaCalendarAlt className="text-xs text-gray-400" />
+        <span>{formatDate(post.createdAt)}</span>
+      </div>
+      <Link
+        href={postPath(post)}
+        className="inline-flex items-center text-[#105d97] hover:text-[#0e4a7a] font-semibold transition-colors gap-1 text-xs"
+      >
+        Đọc thêm <FaArrowRight className="text-[10px]" />
+      </Link>
+    </div>
+  </article>
+);
+
+const Blogs: NextPage<Props> = ({ initialPosts = [], currentPage = 1 }) => {
   const posts = initialPosts;
-  const [currentPage, setCurrentPage] = useState(1);
+  // Phân trang trong tab danh mục (lọc phía client) — tách biệt với ?page=N của danh sách chung.
+  const [categoryPage, setCategoryPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const filterBarRef = useRef<HTMLDivElement | null>(null);
 
   const postsPerPage = 12;
   const featuredPostsCount = 5;
+
+  // Danh sách "Tất cả bài viết" (đã sort createdAt desc ở DB) — nguồn link crawl được cho mọi bài.
+  const totalPages = Math.max(1, Math.ceil(posts.length / POSTS_PER_PAGE));
+  const pagePosts = posts.slice((currentPage - 1) * POSTS_PER_PAGE, currentPage * POSTS_PER_PAGE);
+  const isFirstPage = currentPage === 1;
+  const pageSuffix = isFirstPage ? "" : ` – Trang ${currentPage}`;
+  const pageUrl = `https://dongphucunivi.com${blogPageHref(currentPage)}`;
+  const pageTitle = `${meta.title}${pageSuffix}`;
 
   const displayCategories = useMemo(() => {
     const customCats = posts
@@ -122,7 +177,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    setCategoryPage(page);
     if (typeof window !== "undefined" && filterBarRef.current) {
       const headerOffset = 90;
       const rect = filterBarRef.current.getBoundingClientRect();
@@ -159,7 +214,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
     return getPostsByCategory(selectedCategory);
   }, [posts, selectedCategory]);
 
-  const startIndex = (currentPage - 1) * postsPerPage;
+  const startIndex = (categoryPage - 1) * postsPerPage;
   const paginatedFilteredPosts = categoryFilteredPosts.slice(startIndex, startIndex + postsPerPage);
   const actualTotalPages = Math.max(1, Math.ceil(categoryFilteredPosts.length / postsPerPage));
 
@@ -182,34 +237,37 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
       inLanguage: "vi-VN",
       isPartOf: { "@id": "https://dongphucunivi.com/#website" },
       publisher: { "@id": "https://dongphucunivi.com/#organization" },
-      blogPost: posts.slice(0, 10).map((p, index) => ({
+      blogPost: pagePosts.map((p, index) => ({
         "@type": "BlogPosting",
         headline: p.title,
         url: `https://dongphucunivi.com${postPath(p)}`,
         datePublished: p.createdAt,
         image: p.thumbnail ? [p.thumbnail] : undefined,
-        position: index + 1,
+        position: (currentPage - 1) * POSTS_PER_PAGE + index + 1,
       })),
     },
-  ], [posts]);
+  ], [pagePosts, currentPage]);
 
   return (
     <>
       <Head>
-        <title>{meta.title}</title>
-        <meta name="description" content={meta.description} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={isFirstPage ? meta.description : `${meta.description} – Trang ${currentPage}`} />
         <meta name="keywords" content={meta.keywords} />
         <meta name="author" content={meta.author} />
         <meta name="robots" content={meta.robots} key="robots" />
-        <link rel="canonical" href={meta.canonical} />
+        {/* Mỗi trang phân trang tự canonical về chính nó (Google không gộp ?page=N về trang 1). */}
+        <link rel="canonical" href={pageUrl} />
+        {currentPage > 1 && <link rel="prev" href={`https://dongphucunivi.com${blogPageHref(currentPage - 1)}`} />}
+        {currentPage < totalPages && <link rel="next" href={`https://dongphucunivi.com${blogPageHref(currentPage + 1)}`} />}
         <meta charSet="UTF-8" />
-        <meta property="og:title" content={meta.og.title} />
+        <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={meta.og.description} />
         <meta property="og:type" content={meta.og.type} />
         <meta property="og:image" content={meta.og.image} />
         <meta property="og:image:width" content={meta.og.imageWidth} />
         <meta property="og:image:height" content={meta.og.imageHeight} />
-        <meta property="og:url" content={meta.og.url} />
+        <meta property="og:url" content={pageUrl} />
         <meta property="og:site_name" content={meta.og.site_name} />
         <meta property="og:locale" content="vi_VN" />
         <meta property="og:image:alt" content="Đồng phục Univi" />
@@ -241,10 +299,10 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
             </nav>
 
             <h1 className="text-2xl md:text-3xl font-bold text-[#0B1E48]">
-              Bài viết & Chia sẻ về Đồng phục
+              Bài viết & Chia sẻ về Đồng phục{pageSuffix}
             </h1>
 
-            {featuredPosts.length > 0 && selectedCategory === "all" && (
+            {isFirstPage && featuredPosts.length > 0 && selectedCategory === "all" && (
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4 md:mb-5">
                   <h2 className="flex items-center gap-2 text-xl md:text-2xl font-bold text-[#0B1E48]">
@@ -350,7 +408,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
 
             {selectedCategory === "all" ? (
               <div className="space-y-12">
-                {displayCategories.map((catTitle) => {
+                {isFirstPage && displayCategories.map((catTitle) => {
                   const catPosts = getPostsByCategory(catTitle);
                   if (catPosts.length === 0) return null;
                   const isFeedbackCategory = catTitle === "PHẢN HỒI KHÁCH HÀNG";
@@ -376,47 +434,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                       {catPosts.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
                           {catPosts.slice(0, 4).map((post) => (
-                            <article
-                              key={post.id}
-                              className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 flex flex-col justify-between"
-                            >
-                              <div>
-                                <div className="relative aspect-video overflow-hidden rounded-t-xl">
-                                  {post.thumbnail ? (
-                                    <Image
-                                      src={post.thumbnail}
-                                      alt={post.title}
-                                      fill
-                                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-sky-100 flex items-center justify-center">
-                                      <span className="text-[#105d97] text-3xl">📄</span>
-                                    </div>
-                                  )}
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                </div>
-                                <div className="p-4">
-                                  <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-snug group-hover:text-[#105d97] transition-colors line-clamp-2 mb-2">
-                                    <Link href={postPath(post)}>
-                                      {post.title}
-                                    </Link>
-                                  </h3>
-                                </div>
-                              </div>
-                              <div className="p-4 pt-0 flex items-center justify-between text-xs text-gray-500 border-t border-gray-50 mt-1">
-                                <div className="flex items-center gap-1">
-                                  <FaCalendarAlt className="text-xs text-gray-400" />
-                                  <span>{formatDate(post.createdAt)}</span>
-                                </div>
-                                <Link
-                                  href={postPath(post)}
-                                  className="inline-flex items-center text-[#105d97] hover:text-[#0e4a7a] font-semibold transition-colors gap-1 text-xs"
-                                >
-                                  Đọc thêm <FaArrowRight className="text-[10px]" />
-                                </Link>
-                              </div>
-                            </article>
+                            <PostCard key={post.id} post={post} formatDate={formatDate} />
                           ))}
                         </div>
                       ) : (
@@ -427,6 +445,39 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                     </div>
                   );
                 })}
+
+                {/* Danh sách đầy đủ, phân trang SSR qua ?page=N với <a href> — đảm bảo mọi bài có link nội bộ. */}
+                <section aria-labelledby="all-posts-heading" className="w-full">
+                  <div className="flex items-center gap-4 mb-5">
+                    <h2
+                      id="all-posts-heading"
+                      className="text-base sm:text-lg md:text-xl font-bold uppercase tracking-wider text-[#0B1E48]"
+                    >
+                      Tất cả bài viết
+                    </h2>
+                    <div className="flex-1 h-[1px] bg-gray-200/80" />
+                    <p className="text-gray-500 text-xs sm:text-sm shrink-0">
+                      Trang {currentPage}/{totalPages} · {posts.length} bài viết
+                    </p>
+                  </div>
+                  {pagePosts.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+                      {pagePosts.map((post) => (
+                        <PostCard key={post.id} post={post} formatDate={formatDate} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 px-4 bg-slate-50 rounded-2xl">
+                      <p className="text-gray-500">Chưa có bài viết nào.</p>
+                    </div>
+                  )}
+                  <LinkPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    buildHref={blogPageHref}
+                    ariaLabel="Phân trang bài viết"
+                  />
+                </section>
               </div>
             ) : (
               <div className="mb-12">
@@ -435,7 +486,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                     <button
                       onClick={() => {
                         setSelectedCategory("all");
-                        setCurrentPage(1);
+                        setCategoryPage(1);
                       }}
                       className="text-xs font-semibold text-[#105d97] hover:underline mb-2 inline-flex items-center gap-1"
                     >
@@ -451,46 +502,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                 {paginatedFilteredPosts.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
                     {paginatedFilteredPosts.map((post) => (
-                      <article
-                        key={post.id}
-                        className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="relative aspect-video overflow-hidden rounded-t-xl">
-                            {post.thumbnail ? (
-                              <Image
-                                src={post.thumbnail}
-                                alt={post.title}
-                                fill
-                                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-sky-100 flex items-center justify-center">
-                                <span className="text-[#105d97] text-3xl">📄</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-4">
-                            <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-snug group-hover:text-[#105d97] transition-colors line-clamp-2 mb-2">
-                              <Link href={postPath(post)}>
-                                {post.title}
-                              </Link>
-                            </h3>
-                          </div>
-                        </div>
-                        <div className="p-4 pt-0 flex items-center justify-between text-xs text-gray-500 border-t border-gray-50 mt-1">
-                          <div className="flex items-center gap-1">
-                            <FaCalendarAlt className="text-xs text-gray-400" />
-                            <span>{formatDate(post.createdAt)}</span>
-                          </div>
-                          <Link
-                            href={postPath(post)}
-                            className="inline-flex items-center text-[#105d97] hover:text-[#0e4a7a] font-semibold transition-colors gap-1 text-xs"
-                          >
-                            Đọc thêm <FaArrowRight className="text-[10px]" />
-                          </Link>
-                        </div>
-                      </article>
+                      <PostCard key={post.id} post={post} formatDate={formatDate} />
                     ))}
                   </div>
                 ) : (
@@ -502,8 +514,8 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                 {actualTotalPages > 1 && (
                   <div className="flex justify-center items-center gap-2 mt-8">
                     <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
+                      onClick={() => handlePageChange(categoryPage - 1)}
+                      disabled={categoryPage === 1}
                       className="px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:text-[#105d97] transition-colors font-medium flex items-center gap-2 text-sm"
                     >
                       <FaArrowRight className="rotate-180 text-xs" />
@@ -514,7 +526,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                         <button
                           key={pg}
                           onClick={() => handlePageChange(pg)}
-                          className={`w-9 h-9 rounded-full text-sm font-medium transition-colors flex items-center justify-center ${pg === currentPage
+                          className={`w-9 h-9 rounded-full text-sm font-medium transition-colors flex items-center justify-center ${pg === categoryPage
                               ? "bg-[#105d97] text-white shadow-md"
                               : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
                             }`}
@@ -524,8 +536,8 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                       ))}
                     </div>
                     <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === actualTotalPages}
+                      onClick={() => handlePageChange(categoryPage + 1)}
+                      disabled={categoryPage === actualTotalPages}
                       className="px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:text-[#105d97] transition-colors font-medium flex items-center gap-2 text-sm"
                     >
                       Sau
@@ -565,14 +577,29 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps<Props> = async ({ res }) => {
+export const getServerSideProps: GetServerSideProps<Props> = async ({ res, query }) => {
+  // ?page=N: chỉ chấp nhận số nguyên dương dạng chuẩn. ?page=1 → 301 về /bai-viet (tránh trùng lặp);
+  // giá trị rác (?page=abc, ?page=02, ?page=0) hoặc vượt số trang → 404.
+  const rawPage = Array.isArray(query.page) ? query.page[0] : query.page;
+  let currentPage = 1;
+  if (rawPage !== undefined) {
+    if (!/^[1-9]\d{0,3}$/.test(rawPage)) return { notFound: true };
+    currentPage = Number(rawPage);
+    if (currentPage === 1) {
+      return { redirect: { destination: BLOG_PATH, permanent: true } };
+    }
+  }
+
   setPublicCacheHeaders(res);
   try {
     const raw = await readAllPostsFromDb(false, true);
     const posts = formatPosts(raw) || [];
+    const totalPages = Math.max(1, Math.ceil(posts.length / POSTS_PER_PAGE));
+    if (currentPage > totalPages) return { notFound: true };
     return {
       props: {
         initialPosts: posts,
+        currentPage,
       },
     };
   } catch (error) {
@@ -580,6 +607,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ res }) => 
     return {
       props: {
         initialPosts: [],
+        currentPage: 1,
       },
     };
   }

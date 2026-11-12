@@ -6,6 +6,7 @@ import logo from "../../public/logo-univi.webp";
 import { FaBars, FaTimes, FaChevronDown, FaChevronRight } from "react-icons/fa";
 import ResponsiveNavbar from "./ResponsiveNavbar";
 import ContactForm from "./ContactForm";
+import FilterNavButton from "../common/FilterNavButton";
 import { ENTERPRISE_FLAT_SLUGS, ENTERPRISE_SLUG, isEnterprisePath, isSportPath } from "../../lib/enterpriseFlatSlugs";
 
 // ─── Navbar Link Helpers ───────────────────────────────────────────────────
@@ -112,20 +113,20 @@ const SportUniformMenu = ({ isTransparent = false, activePath = "" }) => {
                     >
                       <ul className="pl-3 space-y-1 border-l-2 border-blue-100 ml-1 py-1">
                         <li>
-                          <Link
+                          <FilterNavButton
                             href="/dong-phuc-gym?line=ao-thun-fit-body&collar=co-tron"
                             className="block text-[13px] text-gray-600 hover:text-[#105d97] py-0.5 font-medium transition-colors whitespace-nowrap"
                           >
                             • Áo thun cổ tròn
-                          </Link>
+                          </FilterNavButton>
                         </li>
                         <li>
-                          <Link
+                          <FilterNavButton
                             href="/dong-phuc-gym?line=ao-thun-fit-body&collar=co-tru"
                             className="block text-[13px] text-gray-600 hover:text-[#105d97] py-0.5 font-medium transition-colors whitespace-nowrap"
                           >
                             • Áo thun cổ trụ
-                          </Link>
+                          </FilterNavButton>
                         </li>
                       </ul>
                     </div>
@@ -133,7 +134,7 @@ const SportUniformMenu = ({ isTransparent = false, activePath = "" }) => {
 
                   {/* Polo thể thao */}
                   <li>
-                    <Link
+                    <FilterNavButton
                       href="/dong-phuc-gym?line=polo-the-thao"
                       className="flex items-center gap-1.5 text-[#333] hover:text-[#105d97] font-semibold text-[13.5px] py-0.5 transition-colors whitespace-nowrap"
                     >
@@ -141,7 +142,7 @@ const SportUniformMenu = ({ isTransparent = false, activePath = "" }) => {
                       <span className="inline-flex items-center bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase shrink-0 shadow-sm animate-pulse">
                         Hot
                       </span>
-                    </Link>
+                    </FilterNavButton>
                   </li>
 
                   {/* Sub category: Mẫu Mockup 3D */}

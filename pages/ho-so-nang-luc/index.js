@@ -12,6 +12,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import styles from '../../styles/Profile.module.css';
 import DefaultLayout from '../../components/layout/DefaultLayout';
+import { COMPANY_INFO } from '../../lib/companyInfo';
 import { setPublicCacheHeaders } from "../../lib/cacheControl";
 
 if (typeof window !== 'undefined') {
@@ -244,7 +245,6 @@ export default function Profile({ meta }) {
                   </div>
                 )}
               </div>
-
             </div>
           </main>
         </div>
@@ -255,20 +255,24 @@ export default function Profile({ meta }) {
 
 export async function getServerSideProps({ res } = {}) {
   setPublicCacheHeaders(res);
+  const years = new Date().getFullYear() - Number(COMPANY_INFO.foundingYear);
+
   const meta = {
     title: "Hồ sơ năng lực Đồng phục Univi - Quần áo thể thao chất lượng cao",
+    description:
+      "Đồng phục Univi – Xưởng may 2.000m² tại Chương Mỹ (Hà Nội), công suất 100.000 sản phẩm/tháng. Chuyên sản xuất đồng phục thể thao và doanh nghiệp với công nghệ Uni Dry.",
     content:
-      "Đồng phục Univi – Thương hiệu quần áo thể thao với công nghệ Uni Dry, chất liệu vải chuyên dụng cho gym, yoga, chạy bộ và golf. An toàn cho da, thoải mái khi vận động.",
+      "Đồng phục Univi – Xưởng may 2.000m² tại Chương Mỹ (Hà Nội), công suất 100.000 sản phẩm/tháng. Chuyên sản xuất đồng phục thể thao và doanh nghiệp với công nghệ Uni Dry.",
     keywords:
-      "hồ sơ năng lực Đồng phục Univi, quần áo thể thao, công nghệ Uni Dry, vải thể thao, trang phục gym, quần áo yoga, chạy bộ, vải an toàn cho da",
+      "hồ sơ năng lực Đồng phục Univi, quần áo thể thao, công nghệ Uni Dry, vải thể thao, trang phục gym, quần áo yoga, chạy bộ, vải an toàn cho da, xưởng may đồng phục Hà Nội",
     robots: "index, follow",
     author: "Đồng phục Univi",
     canonical: "https://dongphucunivi.com/ho-so-nang-luc",
 
     og: {
-      title: "Đồng phục Univi – Quần áo thể thao chuyên dụng",
+      title: "Hồ sơ năng lực Đồng phục Univi – Quần áo thể thao chuyên dụng",
       description:
-        "Khám phá hồ sơ năng lực Đồng phục Univi: quần áo thể thao với công nghệ Uni Dry, chất liệu cao cấp, an toàn cho da, phù hợp cho gym, yoga, chạy bộ.",
+        "Khám phá hồ sơ năng lực Đồng phục Univi: Xưởng may 2.000m² tại Chương Mỹ, công suất 100.000 sản phẩm/tháng, công nghệ Uni Dry, an toàn cho da.",
       type: "website",
       image: "https://dongphucunivi.com/images/banner-1.webp",
       imageWidth: "1200",
@@ -279,7 +283,7 @@ export async function getServerSideProps({ res } = {}) {
       card: "summary_large_image",
       title: "Hồ sơ năng lực Đồng phục Univi - Quần áo thể thao chất lượng cao",
       description:
-        "Đồng phục Univi – Thương hiệu quần áo thể thao với công nghệ Uni Dry, chất liệu vải chuyên dụng cho gym, yoga, chạy bộ và golf.",
+        "Đồng phục Univi – Xưởng may 2.000m² tại Chương Mỹ (Hà Nội), công suất 100.000 sp/tháng, công nghệ Uni Dry chuyên dụng cho thể thao và doanh nghiệp.",
       image: "https://dongphucunivi.com/images/banner-1.webp",
     },
     schema: [
@@ -293,14 +297,73 @@ export async function getServerSideProps({ res } = {}) {
       },
       {
         "@context": "https://schema.org",
-        "@type": "WebPage",
+        "@type": "DigitalDocument",
+        "@id": "https://dongphucunivi.com/ho-so-nang-luc#profile-pdf",
+        "name": "Hồ sơ năng lực Đồng phục Univi 2026 (Bản PDF)",
+        "encodingFormat": "application/pdf",
+        "url": "https://dongphucunivi.com/ho-so-nang-luc.pdf",
+        "description": "Tài liệu hồ sơ năng lực chính thức của Đồng phục Univi năm 2026: Năng lực xưởng may, quy trình 6 bước, 8 bộ phận sản xuất, hệ sinh thái và khách hàng tiêu biểu.",
+        "author": {
+          "@type": "Organization",
+          "name": COMPANY_INFO.name,
+          "legalName": COMPANY_INFO.legalName,
+          "url": COMPANY_INFO.website,
+        },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
         "@id": "https://dongphucunivi.com/ho-so-nang-luc#webpage",
         "name": "Hồ sơ năng lực Đồng phục Univi - Quần áo thể thao chất lượng cao",
-        "description": "Đồng phục Univi – Thương hiệu quần áo thể thao với công nghệ Uni Dry, chất liệu vải chuyên dụng cho gym, yoga, chạy bộ và golf.",
+        "description": `Đồng phục Univi thuộc ${COMPANY_INFO.legalName}, kinh nghiệm hơn ${years} năm trong lĩnh vực sản xuất đồng phục thể thao và doanh nghiệp. Xưởng sản xuất khoảng ${COMPANY_INFO.factory.area} tại ${COMPANY_INFO.factory.addressLocality}, ${COMPANY_INFO.factory.addressRegion} với khoảng 100 thợ may lành nghề, công suất ${COMPANY_INFO.factory.capacity}.`,
         "url": "https://dongphucunivi.com/ho-so-nang-luc",
         "isPartOf": { "@id": "https://dongphucunivi.com/#website" },
-        "about": { "@id": "https://dongphucunivi.com/#organization" },
-      }
+        "about": {
+          "@type": "Organization",
+          "name": COMPANY_INFO.name,
+          "legalName": COMPANY_INFO.legalName,
+          "taxID": COMPANY_INFO.taxCode,
+          "telephone": COMPANY_INFO.hotline,
+          "email": COMPANY_INFO.email,
+          "url": COMPANY_INFO.website,
+          "foundingDate": COMPANY_INFO.foundingYear,
+          "slogan": COMPANY_INFO.slogan,
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": COMPANY_INFO.office.streetAddress,
+            "addressLocality": COMPANY_INFO.office.addressLocality,
+            "addressRegion": COMPANY_INFO.office.addressRegion,
+            "addressCountry": "VN",
+          },
+          "knowsAbout": [
+            "Đồng phục thể thao (Gym, PT, Yoga, Pilates, Pickleball, Tennis, Cầu lông, Bóng đá, Chạy bộ, MMA, Boxing, Bơi)",
+            "Đồng phục doanh nghiệp (Áo Polo, Áo thun, Sơ mi, Vest, Đồng phục công sở, Teambuilding, Sự kiện)",
+            "Công nghệ vải Uni Dry, Uni Super Cool, Uni Quick Dry thoát ẩm một chiều",
+            "Công nghệ in thêu PET, decal, chuyển nhiệt, in nổi silicone/TPU",
+            `Xưởng may ${COMPANY_INFO.factory.area} tại ${COMPANY_INFO.factory.addressLocality} với khoảng 100 thợ may lành nghề`,
+            `Năng lực sản xuất trên 4.000 sản phẩm/ngày, công suất ${COMPANY_INFO.factory.capacity}`,
+            "8 bộ phận sản xuất: Điều phối, Kho, Cắt, Mẫu & Kỹ thuật, May, In/Ép, QC, Hoàn thiện",
+            "Quy trình sản xuất 6 bước: Market → Nguyên phụ liệu → Cắt → May → In/Thêu → Đóng gói & Giao hàng",
+          ],
+          "memberOf": [
+            { "@type": "Brand", "name": "UNIVI SPORT", "description": "Đồng phục và trang phục thể thao" },
+            { "@type": "Brand", "name": "UNIVI UNIFORM", "description": "Đồng phục doanh nghiệp, tổ chức" },
+            { "@type": "Brand", "name": "UNIVI OFFICE", "description": "Thời trang công sở" },
+            { "@type": "Brand", "name": "UNIVI ELEGANT", "description": "Dòng sản phẩm thanh lịch" },
+            { "@type": "Brand", "name": "UNIVI KIDS", "description": "Trang phục trẻ em" },
+            { "@type": "Brand", "name": "UNIVI UNDERWEAR", "description": "Đồ lót, đồ mặc nhà" },
+          ],
+          "customer": [
+            { "@type": "Organization", "name": "Sun Group" },
+            { "@type": "Organization", "name": "Vingroup" },
+            { "@type": "Organization", "name": "Hyundai Thành Công" },
+            { "@type": "Organization", "name": "Tập đoàn Than – Khoáng sản Việt Nam (TKV)" },
+            { "@type": "Organization", "name": "Herbalife" },
+            { "@type": "Organization", "name": "The One Kickfit" },
+            { "@type": "Organization", "name": "Lif Up" },
+          ],
+        },
+      },
     ],
   };
 

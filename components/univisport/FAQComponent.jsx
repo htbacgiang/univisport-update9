@@ -1,337 +1,468 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ExternalLink } from "lucide-react";
-import { DEFAULT_HOMEPAGE_FAQS } from "../../data/homepageFaqs";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChevronDown,
+  ExternalLink,
+  Pause,
+  Play,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import {
+  DEFAULT_HOMEPAGE_FAQS,
+  DEFAULT_CLOUDINARY_VIDEO,
+} from "../../data/homepageFaqs";
 
-const FAQComponent = ({ items = DEFAULT_HOMEPAGE_FAQS }) => {
-  const [expanded, setExpanded] = useState(null);
+const isFacebookVideo = (url) =>
+  typeof url === "string" &&
+  (url.includes("facebook.com") || url.includes("fb.watch"));
+
+const formatTime = (seconds) => {
+  if (!seconds || Number.isNaN(seconds)) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+};
+
+const FAQComponent = ({ items }) => {
+  const [expanded, setExpanded] = useState(0); // Mặc định mở câu 1
   const [selectedMedia, setSelectedMedia] = useState(0);
-  const [hasVideoStarted, setHasVideoStarted] = useState(false);
-  const [isMuted, setIsMuted] = useState(true); // Bắt đầu với muted để autoplay được phép
-  const [audioEnabled, setAudioEnabled] = useState(false); // Track if audio context is enabled
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true); // Bắt đầu muted để autoplay 100% được trình duyệt duyệt
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [progress, setProgress] = useState(0);
 
-  // Force autoplay with user interaction
-  const handleVideoInteraction = () => {
-    try {
-      // Tạo một user interaction để enable autoplay với audio
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const videoRef = useRef(null);
+  const sectionRef = useRef(null);
+  const isUserPausedRef = useRef(false);
 
-      // Resume audio context nếu bị suspend
-      if (audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
-
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      // Tạo âm thanh rất nhỏ để kích hoạt audio context
-      gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.05);
-
-      // Set flag để cho biết user đã tương tác
-      window.userHasInteracted = true;
-    } catch (error) {
-      console.log('Audio context error:', error);
-      window.userHasInteracted = true;
-    }
-  };
-
-  // Setup user interaction handlers for audio autoplay
-  useEffect(() => {
-    const enableAudioAutoplay = () => {
-      handleVideoInteraction();
-      setAudioEnabled(true);
-
-      // Tự động unmute video sau khi có user interaction
-      setTimeout(() => {
-        if (hasVideoStarted) {
-          setIsMuted(false);
-        }
-      }, 1000); // Delay 1 giây để đảm bảo video đã load
-    };
-
-    // Các sự kiện user interaction để enable audio autoplay
-    const events = ['click', 'touchstart', 'keydown', 'mousedown'];
-
-    events.forEach(event => {
-      document.addEventListener(event, enableAudioAutoplay, { once: true });
-    });
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, enableAudioAutoplay);
-      });
-    };
-  }, [hasVideoStarted]);
-
-  // Auto unmute first video when audio is enabled
-  useEffect(() => {
-    if (audioEnabled && hasVideoStarted && isMuted) {
-      const timer = setTimeout(() => {
-        setIsMuted(false);
-      }, 2000); // Delay 2 giây để đảm bảo video đã load hoàn toàn
-
-      return () => clearTimeout(timer);
-    }
-  }, [audioEnabled, hasVideoStarted, isMuted]);
-
+  // Lấy dữ liệu câu hỏi và video trực tiếp từ data/homepageFaqs.js
   const faqs = useMemo(
     () =>
-      (Array.isArray(items) ? items : [])
+      (DEFAULT_HOMEPAGE_FAQS || [])
         .filter((faq) => faq?.question && faq?.answer)
-        .map((faq, index) => ({
-          ...faq,
-          _id: faq._id || `faq-${index}`,
-          image: faq.image || "/images/thumb-univi.jpg",
-          video: faq.video || "",
-        })),
-    [items]
+        .map((faq, index) => {
+          const rawVideo = typeof faq.video === "string" ? faq.video.trim() : "";
+          const video = rawVideo || DEFAULT_CLOUDINARY_VIDEO;
+
+          return {
+            ...faq,
+            _id: faq._id || `faq-${index}`,
+            image: faq.image || "/images/thumb-univi.jpg",
+            video,
+          };
+        }),
+    []
   );
 
+  const currentFaq = faqs[selectedMedia] || faqs[0];
+  const activeVideo = currentFaq?.video || DEFAULT_CLOUDINARY_VIDEO;
+
+  // Click vào câu hỏi FAQ ở danh sách bên trái: đổi câu hỏi và phát video tương ứng ngay lập tức
   const toggleFAQ = (index) => {
-    setExpanded(expanded === index ? null : index);
+    isUserPausedRef.current = false;
+    setExpanded((current) => (current === index ? null : index));
     setSelectedMedia(index);
+  };
 
-    // Reset video state khi chuyển câu hỏi
-    if (selectedMedia !== index) {
-      setHasVideoStarted(false);
-      setIsMuted(true); // Reset về muted khi chuyển video
+  // Tự động phát khi đổi câu hỏi (selectedMedia thay đổi)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || isFacebookVideo(activeVideo)) return;
 
-      if (!faqs[index]?.video) return;
+    video.currentTime = 0;
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          // Trình duyệt chặn autoplay có tiếng -> mute và phát tiếp
+          video.muted = true;
+          setIsMuted(true);
+          video
+            .play()
+            .then(() => setIsPlaying(true))
+            .catch(() => setIsPlaying(false));
+        });
+    }
+  }, [selectedMedia, activeVideo]);
 
-      // Enable autoplay với user interaction
-      handleVideoInteraction();
+  // Tự động dừng video khi cuộn ra khỏi khu vực FAQ (và phát tiếp khi cuộn vào lại)
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === "undefined") return;
 
-      // Auto start video khi chuyển câu hỏi mới
-      setTimeout(() => {
-        setHasVideoStarted(true);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const isVisible = entry.isIntersecting && entry.intersectionRatio > 0.05;
+        const video = videoRef.current;
 
-        // Nếu audio đã được enable, tự động unmute sau khi video load
-        if (audioEnabled) {
-          setTimeout(() => {
-            setIsMuted(false);
-          }, 1500); // Delay thêm để đảm bảo iframe đã load xong
+        if (!isVisible) {
+          // Cuộn ra khỏi khu vực FAQ -> Tự động dừng video
+          if (video && !video.paused) {
+            video.pause();
+            setIsPlaying(false);
+          }
+          // Dừng các video khác trong section (ví dụ video mobile)
+          const allVideos = section.querySelectorAll("video");
+          allVideos.forEach((v) => {
+            if (!v.paused) v.pause();
+          });
+        } else {
+          // Cuộn lại vào khu vực FAQ -> Nếu người dùng chưa chủ động bấm dừng thì tiếp tục phát
+          if (video && !isUserPausedRef.current && !isFacebookVideo(activeVideo)) {
+            video
+              .play()
+              .then(() => setIsPlaying(true))
+              .catch(() => {
+                video.muted = true;
+                setIsMuted(true);
+                video.play().then(() => setIsPlaying(true)).catch(() => {});
+              });
+          }
         }
-      }, 300);
+      },
+      { threshold: [0, 0.05, 0.15] }
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [activeVideo]);
+
+  // Click vào màn hình video (Desktop): Play / Pause
+  const handleVideoClick = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      isUserPausedRef.current = false;
+      video
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          video.muted = true;
+          setIsMuted(true);
+          video.play().then(() => setIsPlaying(true)).catch(() => {});
+        });
+    } else {
+      isUserPausedRef.current = true;
+      video.pause();
+      setIsPlaying(false);
     }
   };
 
-  const currentFaq = faqs[selectedMedia];
+  // Bật/tắt tiếng
+  const toggleMute = (e) => {
+    e.stopPropagation();
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (videoRef.current) {
+      videoRef.current.muted = nextMuted;
+    }
+  };
+
+  // Tua video khi click thanh tiến trình
+  const handleSeek = (e) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+    video.currentTime = ratio * video.duration;
+    setProgress(ratio * 100);
+  };
+
+  // Cập nhật tiến trình video
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const onTimeUpdate = () => {
+      if (video.duration) {
+        setCurrentTime(video.currentTime);
+        setProgress((video.currentTime / video.duration) * 100);
+      }
+    };
+    const onLoadedMetadata = () => {
+      setDuration(video.duration || 0);
+    };
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onEnded = () => setIsPlaying(false);
+
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("loadedmetadata", onLoadedMetadata);
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("ended", onEnded);
+
+    return () => {
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("loadedmetadata", onLoadedMetadata);
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("ended", onEnded);
+    };
+  }, [selectedMedia]);
 
   if (!currentFaq) return null;
 
   return (
-    <section className="faq-section py-16 relative overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="faq-section py-16 relative overflow-hidden"
+    >
       {/* Background decorative elements */}
-      <div className="absolute bottom-0 right-0 w-96 h-96 gradient-faq-bg-decoration rounded-full blur-3xl translate-x-48 translate-y-48"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 gradient-faq-bg-decoration rounded-full blur-3xl translate-x-48 translate-y-48 pointer-events-none" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 ">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="md:text-2xl text-xl font-medium tracking-tight leading-6 uppercase md:mb-4 mb-2 gradient-faq-title mx-auto">
-            Câu Hỏi Thường Gặp Về  Univi
+            Câu Hỏi Thường Gặp Về Univi
           </h2>
-          <div className="w-16 h-1 gradient-faq-divider mx-auto md:mb-4 mb-2 rounded-full"></div>
+          <div className="w-16 h-1 gradient-faq-divider mx-auto md:mb-4 mb-2 rounded-full" />
           <p className="text-lg text-slate-600/90 max-w-4xl mx-auto">
             Tìm hiểu các thông tin về sản phẩm và dịch vụ đồng phục thể thao chuyên nghiệp của Đồng Phục Univi
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* FAQ Section */}
+          {/* FAQ List */}
           <div className="space-y-3 lg:col-span-2">
-            {faqs.map((faq, index) => (
-              <div
-                key={faq._id}
-                className={`group rounded-2xl overflow-hidden transition-all duration-300 ${selectedMedia === index
-                  ? "gradient-faq-selected ring-2 ring-blue-200 shadow-lg"
-                  : "bg-white/80 backdrop-blur-sm ring-1 ring-white/40 shadow-md hover:shadow-lg"
+            {faqs.map((faq, index) => {
+              const isSelected = selectedMedia === index;
+              const isItemExpanded = expanded === index;
+
+              return (
+                <div
+                  key={faq._id}
+                  className={`group rounded-2xl overflow-hidden transition-all duration-300 ${
+                    isSelected
+                      ? "gradient-faq-selected ring-2 ring-blue-200 shadow-lg"
+                      : "bg-white/80 backdrop-blur-sm ring-1 ring-white/40 shadow-md hover:shadow-lg"
                   }`}
-              >
-                <button
-                  className="w-full p-4 lg:p-5 text-left transition-all duration-300 hover:bg-white/50"
-                  onClick={() => toggleFAQ(index)}
-                  aria-expanded={expanded === index}
-                  aria-controls={`faq-answer-${index}`}
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className={`font-medium text-sm lg:text-base transition-colors duration-300 ${selectedMedia === index ? "text-[#105d97]" : "text-slate-700"
-                      }`}>
-                      {faq.question}
-                    </h3>
-                    <ChevronDown className={`w-4 h-4 lg:w-5 lg:h-5 transition-all duration-300 flex-shrink-0 ml-2 ${expanded === index ? "rotate-180" : ""
-                      } ${selectedMedia === index ? "text-[#105d97]" : "text-slate-400"}`} />
-                  </div>
-                </button>
-
-                {/* Mobile Video Overlay - không làm thay đổi layout */}
-                {expanded === index && faq.video && (
-                  <div
-                    className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeInDown"
-                    onClick={(e) => {
-                      // Đóng video khi click vào backdrop (không phải video container)
-                      if (e.target === e.currentTarget) {
-                        setExpanded(null);
-                      }
-                    }}
+                  <button
+                    className="w-full p-4 lg:p-5 text-left transition-all duration-300 hover:bg-white/50"
+                    onClick={() => toggleFAQ(index)}
+                    aria-expanded={isItemExpanded}
+                    aria-controls={`faq-answer-${index}`}
                   >
-                    {/* Video container */}
-                    <div className="relative max-w-xs mx-auto w-full">
-                      <div className="relative rounded-2xl overflow-hidden bg-white/90 backdrop-blur-sm shadow-2xl">
-                        <div className="relative aspect-[9/16]">
-                          <iframe
-                            src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(faq.video)}&show_text=false&autoplay=true&muted=${isMuted}&playsinline=true&controls=true&width=280&height=498`}
-                            width="100%"
-                            height="100%"
-                            style={{ border: 'none', overflow: 'hidden' }}
-                            scrolling="no"
-                            frameBorder="0"
-                            loading="lazy"
-                            allowFullScreen={true}
-                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; microphone; camera; fullscreen"
-                            className="rounded-2xl"
-                            key={`mobile-${index}-${isMuted}`}
-                          />
-
-                          {/* Close Button Overlay - thay thế nút mute */}
-                          <button
-                            onClick={() => setExpanded(null)}
-                            className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-700 hover:bg-white transition-all duration-300 shadow-lg z-10 hover:scale-110"
-                            title="Đóng video"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Facebook Button - Mobile */}
-                      <div className="mt-4 flex justify-center">
-                        <a
-                          href={faq.video}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group inline-flex items-center gap-3 gradient-faq-button text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 font-medium text-sm hover:scale-105"
-                        >
-                          <div className="relative">
-                            <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                              <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                              </svg>
-                            </div>
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          </div>
-                          <span>Xem trên Facebook</span>
-                          <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                        </a>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <h3
+                        className={`font-medium text-sm lg:text-base transition-colors duration-300 ${
+                          isSelected ? "text-[#105d97]" : "text-slate-700"
+                        }`}
+                      >
+                        {faq.question}
+                      </h3>
+                      <ChevronDown
+                        className={`w-4 h-4 lg:w-5 lg:h-5 transition-all duration-300 flex-shrink-0 ml-2 ${
+                          isItemExpanded ? "rotate-180" : ""
+                        } ${isSelected ? "text-[#105d97]" : "text-slate-400"}`}
+                      />
                     </div>
-                  </div>
-                )}
+                  </button>
 
-                <div className={`overflow-hidden transition-all duration-300 ${expanded === index ? "max-h-64 lg:max-h-48 opacity-100" : "max-h-0 opacity-0"
-                  }`}>
-                  <div className="px-4 lg:px-5 pb-4 lg:pb-5">
-                    <div className="border-t border-slate-200/50 pt-3 lg:pt-4">
-                      <div className="text-slate-600 text-sm lg:text-base leading-6">
-                        {faq.answer.split("\n").map((line, lineIndex) => (
-                          <p key={lineIndex} className="mb-1 last:mb-0">
-                            {line}
-                          </p>
-                        ))}
+                  {/* Nội dung câu trả lời + Video phát trực tiếp trên Mobile */}
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ${
+                      isItemExpanded
+                        ? "max-h-[800px] opacity-100"
+                        : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className="px-4 lg:px-5 pb-4 lg:pb-5">
+                      <div className="border-t border-slate-200/50 pt-3 lg:pt-4">
+                        <div className="text-slate-600 text-sm lg:text-base leading-6">
+                          {(faq?.answer || "").split("\n").map((line, lineIndex) => (
+                            <p key={lineIndex} className="mb-1 last:mb-0">
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+
+                        {/* Video phát trực tiếp trên Mobile (Không dùng ảnh xem trước) */}
+                        {isItemExpanded && faq.video && (
+                          <div className="lg:hidden mt-4 pt-3 border-t border-slate-100">
+                            <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[9/16] max-w-[270px] mx-auto bg-slate-900">
+                              {isFacebookVideo(faq.video) ? (
+                                <iframe
+                                  src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(
+                                    faq.video
+                                  )}&show_text=false&autoplay=true&muted=true&playsinline=true&controls=true&width=270&height=480`}
+                                  width="100%"
+                                  height="100%"
+                                  style={{ border: "none", overflow: "hidden" }}
+                                  scrolling="no"
+                                  frameBorder="0"
+                                  loading="lazy"
+                                  allowFullScreen={true}
+                                  allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                                  className="w-full h-full rounded-2xl"
+                                />
+                              ) : (
+                                <video
+                                  src={faq.video}
+                                  autoPlay
+                                  muted
+                                  loop
+                                  playsInline
+                                  controls
+                                  preload="auto"
+                                  className="w-full h-full object-cover rounded-2xl"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Media Section - Desktop Only */}
+          {/* Media Section - Desktop Sticky (Video phát trực tiếp, KHÔNG dùng ảnh xem trước) */}
           <div className="relative w-full hidden lg:flex lg:flex-col lg:items-center lg:col-span-1 lg:sticky lg:top-24">
             <div className="w-[290px] xl:w-[330px] max-w-full">
-              <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[9/16] w-full bg-slate-900">
-                {hasVideoStarted && currentFaq.video ? (
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[9/16] w-full bg-slate-900 group">
+                {isFacebookVideo(activeVideo) ? (
                   <iframe
-                    src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(currentFaq.video)}&show_text=false&autoplay=true&muted=${isMuted}&playsinline=true&controls=true&width=330&height=586`}
+                    src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(
+                      activeVideo
+                    )}&show_text=false&autoplay=true&muted=${isMuted}&playsinline=true&controls=true&width=330&height=586`}
                     width="100%"
                     height="100%"
-                    style={{ border: 'none', overflow: 'hidden' }}
+                    style={{ border: "none", overflow: "hidden" }}
                     scrolling="no"
                     frameBorder="0"
                     loading="lazy"
                     allowFullScreen={true}
                     allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; microphone; camera; fullscreen"
                     className="w-full h-full rounded-2xl"
-                    key={`desktop-${selectedMedia}-${isMuted}`} // Force reload khi muted state thay đổi
+                    key={`desktop-fb-${selectedMedia}-${isMuted}`}
                   />
                 ) : (
+                  /* Thẻ Video HTML5 (Cloudinary / MP4) - Hiển thị và phát trực tiếp */
                   <div
-                    className={`relative w-full h-full ${currentFaq.video ? "cursor-pointer" : ""
-                      }`}
-                    onClick={() => {
-                      if (!currentFaq.video) return;
-                      handleVideoInteraction();
-                      setHasVideoStarted(true);
-                    }}
+                    className="relative w-full h-full cursor-pointer select-none"
+                    onClick={handleVideoClick}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={currentFaq.image}
-                      alt={currentFaq.question}
-                      width={330}
-                      height={586}
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover"
+                    <video
+                      ref={videoRef}
+                      src={activeVideo}
+                      autoPlay
+                      muted={isMuted}
+                      loop
+                      playsInline
+                      preload="auto"
+                      className="w-full h-full object-cover rounded-2xl"
                     />
-                    <div className="absolute inset-0 gradient-faq-image-overlay"></div>
 
-                    {/* Play button overlay */}
-                    {currentFaq.video && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 bg-blue-600/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700/90 transition-all duration-200 hover:scale-110">
-                          <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
+                    {/* Nút Play to ở giữa khi đang tạm dừng */}
+                    {!isPlaying && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] transition-all duration-200">
+                        <div className="w-16 h-16 bg-blue-600/90 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 hover:bg-blue-600 transition-transform">
+                          <Play className="w-7 h-7 text-white fill-white ml-1" />
                         </div>
                       </div>
                     )}
 
-                    {/* Topic indicator */}
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-md">
-                        <p className="text-xs text-slate-700 font-medium line-clamp-2">{currentFaq.question}</p>
+                    {/* Header điều khiển: Trạng thái & Nút Bật/Tắt âm */}
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
+                      <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-medium px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            isPlaying
+                              ? "bg-green-400 animate-pulse"
+                              : "bg-amber-400"
+                          }`}
+                        />
+                        {isPlaying ? "Đang phát video" : "Tạm dừng"}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={toggleMute}
+                        aria-label={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
+                        className="pointer-events-auto w-8 h-8 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 cursor-pointer"
+                      >
+                        {isMuted ? (
+                          <VolumeX className="w-4 h-4 text-white" />
+                        ) : (
+                          <Volume2 className="w-4 h-4 text-white" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Footer điều khiển & tiến trình */}
+                    <div
+                      className="absolute bottom-0 left-0 right-0 p-3.5 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Tiêu đề câu hỏi đang phát */}
+                      <p className="text-white text-xs font-medium line-clamp-1 mb-2 opacity-95">
+                        {currentFaq.question}
+                      </p>
+
+                      {/* Thanh tiến trình có thể click để tua */}
+                      <div
+                        className="w-full bg-white/30 h-1.5 rounded-full overflow-hidden mb-2 cursor-pointer"
+                        onClick={handleSeek}
+                        title="Click để tua video"
+                      >
+                        <div
+                          className="bg-blue-500 h-full transition-all duration-100 rounded-full"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-white text-[11px]">
+                        <button
+                          type="button"
+                          onClick={handleVideoClick}
+                          className="flex items-center gap-1.5 font-medium hover:text-blue-300 transition-colors cursor-pointer"
+                        >
+                          {isPlaying ? (
+                            <>
+                              <Pause className="w-3.5 h-3.5 fill-white text-white" />
+                              <span>Tạm dừng</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3.5 h-3.5 fill-white text-white" />
+                              <span>Phát tiếp</span>
+                            </>
+                          )}
+                        </button>
+                        <span className="tabular-nums font-mono opacity-80 text-[10px]">
+                          {formatTime(currentTime)} / {formatTime(duration)}
+                        </span>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Facebook Button */}
-              {currentFaq.video && (
+              {/* Link Facebook nếu là video Facebook */}
+              {isFacebookVideo(activeVideo) && (
                 <div className="mt-3">
                   <a
-                    href={currentFaq.video}
+                    href={activeVideo}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group inline-flex items-center gap-2 w-full justify-center gradient-faq-button text-white px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 font-medium text-sm xl:text-base"
                   >
-                    <div className="relative">
-                      <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                        <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                        </svg>
-                      </div>
-                      <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                    </div>
-                    <span>Video Facebook</span>
+                    <span>Xem trên Facebook</span>
                     <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-300" />
                   </a>
                 </div>

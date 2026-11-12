@@ -219,16 +219,32 @@ const NOINDEX_ROUTES = new Set([
   "/auth/signin",
 ]);
 
-function getRobotsContent(pathname, robots) {
+// Tham số LỌC/SẮP XẾP: URL có các tham số này là biến thể trùng lặp của trang gốc
+// → "noindex, follow" (canonical đã luôn về URL sạch, xem cleanCanonical bên dưới).
+// KHÔNG gồm "page": /bai-viet?page=N là trang phân trang tự canonical, cần index để
+// Google tiếp tục đi theo link tới bài viết.
+const FILTER_QUERY_KEYS = ["line", "collar", "color", "material", "sort", "price"];
+
+function hasFilterQuery(asPath) {
+  const search = typeof asPath === "string" ? asPath.split("#")[0].split("?")[1] : "";
+  if (!search) return false;
+  const params = new URLSearchParams(search);
+  return FILTER_QUERY_KEYS.some((key) => params.has(key));
+}
+
+function getRobotsContent(pathname, robots, asPath) {
   if (pathname.startsWith("/dashboard") || NOINDEX_ROUTES.has(pathname)) {
     return "noindex, nofollow";
   }
 
-  if (typeof robots === "string" && robots.trim()) {
-    return robots.trim();
+  const pageRobots = typeof robots === "string" && robots.trim() ? robots.trim() : DEFAULT_ROBOTS;
+
+  // Trang đã tự noindex thì giữ nguyên; còn lại, URL có tham số lọc → noindex, follow.
+  if (hasFilterQuery(asPath) && !/noindex/i.test(pageRobots)) {
+    return "noindex, follow";
   }
 
-  return DEFAULT_ROBOTS;
+  return pageRobots;
 }
 
 function MyApp({ Component, pageProps: { session, meta, ...pageProps } }) {
@@ -324,7 +340,7 @@ function MyApp({ Component, pageProps: { session, meta, ...pageProps } }) {
   const ogImageType = getImageMimeType(meta?.og?.image);
   const safeOg = meta?.og || {};
   const safeTwitter = meta?.twitter || {};
-  const robotsContent = getRobotsContent(router.pathname, meta?.robots);
+  const robotsContent = getRobotsContent(router.pathname, meta?.robots, router.asPath);
   // Canonical luôn là URL sạch: bỏ query string (?line=..&collar=..) và hash, kể cả khi trang truyền nhầm.
   const cleanCanonical =
     typeof meta?.canonical === "string" ? meta.canonical.split(/[?#]/)[0] : meta?.canonical;

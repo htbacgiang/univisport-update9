@@ -210,7 +210,7 @@ export default function CategoryGrid() {
                       fill
                       quality={100}
                       style={{ objectFit: "cover" }}
-                      className="transition-transform duration-700 ease-in-out group-hover/item:scale-105"
+                      className=""
                       sizes="(max-width: 640px) 44vw, (max-width: 1024px) 33vw, 16vw"
                     />
                   </div>

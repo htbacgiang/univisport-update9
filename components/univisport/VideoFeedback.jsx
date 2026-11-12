@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { DEFAULT_VIDEO_FEEDBACK_ITEMS } from "../../data/videoFeedbackItems";
 
 // ─────────────────────────────────────────────────────────────
 // Video items
@@ -28,9 +27,7 @@ function fmt(s) {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
-// Poster WebP nhẹ (~30KB) dùng khi video chưa có poster riêng trong dashboard.
-const FALLBACK_POSTER = "/images/video-posters/feedback.webp";
-const getPoster = (item) => item.poster || FALLBACK_POSTER;
+const getPoster = (item) => item.poster || "";
 
 const mediaStyle = {
   width: "100%",
@@ -280,7 +277,7 @@ function VideoCard({ item, isActive, onActivate, onExpand, modalOpen, componentV
   // Chưa gắn src cho tới khi người dùng phát/tua video: tránh việc 6 thẻ video (nhiều thẻ
   // trùng cùng 1 file) cùng tải metadata ngay khi vào trang, và tải lại lần 2 khi API
   // /api/video-feedback thay danh sách mặc định bằng danh sách từ DB.
-  const shouldLoadVideo = playing || hasStarted;
+  const shouldLoadVideo = playing || hasStarted || !hasPoster;
 
   const wasPlayingRef = useRef(false);
   const playingRef = useRef(false);
@@ -509,7 +506,7 @@ function AnyVideoCard({ item, isActive, onActivate, onExpand, modalOpen, compone
 // ─────────────────────────────────────────────────────────────
 // Main VideoFeedback
 // ─────────────────────────────────────────────────────────────
-export default function VideoFeedback({ initialItems = DEFAULT_VIDEO_FEEDBACK_ITEMS }) {
+export default function VideoFeedback({ initialItems = [] }) {
   const fallbackItems = normalizeVideoItems(initialItems);
   const [videoItems, setVideoItems] = useState(fallbackItems);
   const [activeId, setActiveId] = useState(fallbackItems[0]?.id || null);
@@ -531,13 +528,13 @@ export default function VideoFeedback({ initialItems = DEFAULT_VIDEO_FEEDBACK_IT
         if (!response.ok) return;
         const data = await response.json();
         const nextItems = normalizeVideoItems(data.videos);
-        if (ignore || nextItems.length === 0) return;
+        if (ignore) return;
         setVideoItems(nextItems);
-        setActiveId((current) =>
+        setActiveId((current) => nextItems.length === 0 ? null :
           nextItems.some((item) => item.id === current) ? current : nextItems[0].id
         );
       } catch {
-        // Giữ fallback tĩnh nếu API lỗi.
+        // API lỗi: không hiển thị section.
       }
     };
 

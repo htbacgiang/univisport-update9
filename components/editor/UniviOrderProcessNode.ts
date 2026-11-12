@@ -289,5 +289,6 @@ export const UniviOrderProcessNode = Node.create<UniviOrderProcessOptions>({
   },
 });
 
+export { default as UniviOrderProcess } from "../univisport/order-process/UniviOrderProcess";
 export default UniviOrderProcessNode;
 

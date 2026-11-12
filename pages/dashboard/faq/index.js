@@ -460,7 +460,7 @@ export default function HomepageFaqAdminPage() {
                     }))
                   }
                   className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:border-[#105d97] focus:outline-none focus:ring-2 focus:ring-[#105d97]/20"
-                  placeholder="https://www.facebook.com/reel/..."
+                  placeholder="https://res.cloudinary.com/... hoặc link video MP4 / Facebook"
                 />
               </Field>
 

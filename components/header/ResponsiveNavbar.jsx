@@ -4,10 +4,15 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { FaHome, FaInfoCircle, FaShoppingBag, FaNewspaper, FaPhone, FaStar, FaChevronDown, FaTimes, FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaYoutube, FaBriefcase } from "react-icons/fa";
 import logo from "../../public/logo-univi.webp";
+import FilterNavButton, { isFilterHref } from "../common/FilterNavButton";
 import { getProductLineOptions } from "../../lib/productTaxonomy";
 import { ENTERPRISE_FLAT_SLUGS, ENTERPRISE_SLUG, isEnterprisePath, isSportPath } from "../../lib/enterpriseFlatSlugs";
 
 const enterpriseMenuItems = getProductLineOptions(ENTERPRISE_SLUG);
+
+// Link lọc (?line=..&collar=..) render thành <button> — không để crawler phát hiện URL có query.
+const NavLink = ({ href, ...props }) =>
+  isFilterHref(href) ? <FilterNavButton href={href} {...props} /> : <Link href={href} {...props} />;
 
 const menuItems = [
   { name: "Trang chủ", link: "/", icon: FaHome },
@@ -201,14 +206,14 @@ const ResponsiveMenu = ({ isOpen, toggleMenu }) => {
                                           <div>
                                             <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 rounded-lg">
                                               {nested.link ? (
-                                                <Link
+                                                <NavLink
                                                   href={nested.link}
                                                   onClick={toggleMenu}
                                                   className="flex items-center gap-1.5 hover:text-[#105d97]"
                                                 >
                                                   <span className="w-1.5 h-1.5 rounded-full bg-[#105d97]/70 shrink-0" />
                                                   <span className="whitespace-nowrap">{nested.name}</span>
-                                                </Link>
+                                                </NavLink>
                                               ) : (
                                                 <button
                                                   type="button"
@@ -238,7 +243,7 @@ const ResponsiveMenu = ({ isOpen, toggleMenu }) => {
                                             >
                                               <div className="pl-4 ml-2 border-l border-dashed border-blue-200 space-y-0.5">
                                                 {nested.subDropdown.map((leaf, lIdx) => (
-                                                  <Link
+                                                  <NavLink
                                                     key={lIdx}
                                                     href={leaf.link}
                                                     onClick={toggleMenu}
@@ -246,13 +251,13 @@ const ResponsiveMenu = ({ isOpen, toggleMenu }) => {
                                                   >
                                                     <span className="text-gray-400 font-normal">-</span>
                                                     <span className="whitespace-nowrap">{leaf.name}</span>
-                                                  </Link>
+                                                  </NavLink>
                                                 ))}
                                               </div>
                                             </div>
                                           </div>
                                         ) : (
-                                          <Link
+                                          <NavLink
                                             href={nested.link}
                                             onClick={toggleMenu}
                                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:text-[#105d97] hover:bg-gray-50 rounded-lg transition-all"
@@ -260,7 +265,7 @@ const ResponsiveMenu = ({ isOpen, toggleMenu }) => {
                                             <span className="w-1.5 h-1.5 rounded-full bg-[#105d97]/70 shrink-0" />
                                             <span className="whitespace-nowrap">{nested.name}</span>
 
-                                          </Link>
+                                          </NavLink>
                                         )}
                                       </div>
                                     );
